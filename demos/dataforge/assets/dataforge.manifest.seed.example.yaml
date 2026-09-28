@@ -1,0 +1,121 @@
+# =============================================================================
+# dataforge manifest -- seed example
+#
+# Copy this file to dataforge.manifest.yaml for a new project.
+# The seed contains only setup values that are missing, user-owned, or needed
+# before discovery can run. The agent discovers everything else via Unity
+# Catalog CLI during cold-start.
+#
+# After running forge-init, the agent writes dataforge.manifest.resolved.yaml with all
+# discovered values. Sub-skills read the resolved file at runtime.
+#
+# See forge-init/SKILL.md for details on the seed -> resolved workflow.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# TIER 1: REQUIRED (user must provide)
+#
+# These fields cannot be auto-discovered. They represent project identity and
+# platform selection that only the user knows.
+# ---------------------------------------------------------------------------
+
+# Skill framework version (semver). Bump when sub-skill contracts change.
+skill_version: "0.1.0"
+
+project:
+  # Human-readable project name (used in documentation and PR titles)
+  name: "my-project"
+
+  # Root directory name for the metric store in this repository.
+  # The agent scans this directory to discover domains, tools, and entity structure.
+  store_name: "metric_store_directory"
+
+  # GitHub repository in "owner/name" form, used for issue intake and pull
+  # requests. Set to null to operate on the repository in the working directory.
+  repository: null
+
+platform:
+  # Data platform engine. Determines which CLI and query dialect the agent uses.
+  #   databricks  -- Unity Catalog CLI for discovery, Databricks jobs for orchestration
+  #   duckdb      -- DuckDB CLI for discovery and execution, one .duckdb file per
+  #                  zone, no orchestration layer and no account required
+  engine: "databricks"
+
+  # Pipeline code framework. Determines how the agent generates and validates code.
+  #   spark_python -- Python files with f-string SQL, Databricks job orchestration
+  #   dbt          -- dbt models with Jinja, dbt CLI or dbt Cloud orchestration
+  #
+  # The duckdb engine has no Spark runtime, so it pairs with `dbt`. Choosing
+  # duckdb + spark_python leaves pipeline execution unsupported; forge-dbx will
+  # run extracted SQL directly instead.
+  pipeline_framework: "spark_python"
+
+  # Required when engine is "duckdb": directory holding one <zone_id>.duckdb file
+  # per zone, relative to the workspace root. Ignored for "databricks".
+  duckdb_dir: null
+
+# ---------------------------------------------------------------------------
+# TIER 2: OPTIONAL OVERRIDES (user provides only when agent defaults are wrong)
+#
+# Every field below has an agent-discoverable default. Include a section ONLY
+# when the discovered value is incorrect for your project.
+#
+# The agent merges these overrides on top of discovered values during
+# forge-init. Tier 2 values always win over auto-discovery.
+# ---------------------------------------------------------------------------
+
+# overrides:
+#   # Explicit deployment order when alphabetical zone sorting is wrong.
+#   # Default: zones sorted alphabetically by profile name suffix.
+#   deployment_order: [<zone_1>, <zone_2>, <zone_3>]
+#
+#   # Catalogs that don't follow the standard {prefix}_{zone_suffix} pattern.
+#   # The agent discovers all catalogs via Unity Catalog CLI and classifies them
+#   # by naming convention. Add exceptions here for catalogs that break the pattern.
+#   zone_exceptions:
+#     <catalog_role>:
+#       <zone_id>: "<catalog_name>"
+#
+#   # Display names where Python's .title() produces wrong output.
+#   # Default: the agent applies .title() to the tool_name (e.g., "change_request" -> "Change Request").
+#   # Override for acronyms, abbreviations, or branded names.
+#   tool_name_overrides:
+#     <tool_name>: "<Display Name>"
+#
+#   # Tools that cannot support user grain.
+#   # The agent discovers most exclusions by checking whether source tables have
+#   # a user_id column via DESCRIBE TABLE. Add manual overrides here for
+#   # tools where the exclusion is a business rule rather than a schema constraint.
+#   # Value is the fallback grain suffix (e.g., "_account", "_workspace").
+#   user_grain_excluded_tools:
+#     <tool_name>: "_workspace"
+#
+#   # Virtual tools: compound grains derived from a base tool's source data.
+#   # The agent detects these by scanning for pipeline files whose tool name
+#   # differs from their entity folder name. Add manual entries here if the
+#   # naming convention doesn't allow automatic detection.
+#   virtual_tools:
+#     <virtual_tool_name>:
+#       base_tool: <base_tool_name>
+#       domain: <domain_name>
+#       folder: <PascalCase_Folder_Name>
+#
+#   # Table prefix overrides: when the schema table prefix differs from the tool name.
+#   # Default: the agent uses the tool name as the table prefix.
+#   table_prefix_overrides:
+#     <tool_name>: "<schema_table_prefix>"
+#
+#   # Folder name overrides: when the directory name uses non-standard casing.
+#   # Default: the agent converts tool_name to PascalCase (e.g., "change_request" -> "Change_Request").
+#   # Override for all-caps or special casing.
+#   folder_name_overrides:
+#     <tool_name>: "<PascalCase_Folder_Name>"
+#
+#   # Naming grammar additions.
+#   # The agent derives the legal verb set from the verbs your existing pipeline
+#   # code already uses, so the first metric to use a genuinely new verb will be
+#   # rejected by forge-lint. Declare it here rather than editing the resolved
+#   # manifest -- that file is regenerated. Verbs are unioned with the
+#   # discovered set and must be present tense.
+#   naming:
+#     verbs: ["<new_verb>"]

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/scripts/session-start-cc.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

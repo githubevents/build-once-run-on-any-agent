@@ -1,0 +1,58 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  package-drift:
+    name: generated packaging targets match source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: node scripts/package.mjs --check
+
+  tests:
+    name: contracts and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/validate_contracts.py
+      - run: python scripts/tests/test_verify.py
+      - run: python scripts/tests/test_validate_contracts.py
+      - run: node hooks/scripts/session-start.test.mjs
+
+  example:
+    name: example project builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: install duckdb
+        run: |
+          curl -fsSL https://install.duckdb.org | sh
+          echo "$HOME/.duckdb/cli/latest" >> "$GITHUB_PATH"
+      - run: python seed.py
+        working-directory: examples/support-desk
+      - run: python seed.py --check
+        working-directory: examples/support-desk
+
+  leak-scan:
+    name: no employer-specific content
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: scan skills for hardcoded business context
+        run: scripts/leak_scan.sh

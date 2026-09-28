@@ -1,0 +1,18 @@
+{
+  "name": "dataforge",
+  "displayName": "Dataforge",
+  "description": "Universal data platform skill framework for metric pipeline engineering, data exploration, and deployment orchestration.",
+  "license": "MIT",
+  "keywords": [
+    "dataforge",
+    "data-platform",
+    "metrics",
+    "pipelines",
+    "analytics",
+    "duckdb",
+    "databricks"
+  ],
+  "version": "0.1.0",
+  "skills": "skills",
+  "hooks": "hooks/cursor.json"
+}
