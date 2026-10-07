@@ -1,0 +1,20 @@
+{
+  "name": "dataforge",
+  "owner": {
+    "name": "Shishir Tewari"
+  },
+  "version": "0.1.0",
+  "description": "Universal data platform skill framework for metric pipeline engineering, data exploration, and deployment orchestration.",
+  "plugins": [
+    {
+      "name": "dataforge",
+      "source": "./",
+      "description": "Universal data platform skill framework for metric pipeline engineering, data exploration, and deployment orchestration.",
+      "author": {
+        "name": "Shishir Tewari"
+      },
+      "repository": "https://github.com/tewarishishir/dataforge",
+      "license": "MIT"
+    }
+  ]
+}

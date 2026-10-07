@@ -1,5 +1,19 @@
 # dataforge
 
+> This folder is a snapshot of [tewarishishir/dataforge](https://github.com/tewarishishir/dataforge)
+> at [`a28b22e`](https://github.com/tewarishishir/dataforge/commit/a28b22e), for the
+> GitHub Universe 2026 session. Install from, star, file issues on, and open pull
+> requests against the canonical repository. This copy is not updated between syncs.
+>
+> One difference: `examples/support-desk` is kept at its unbuilt starting state, so
+> [DEMO.md](examples/support-desk/DEMO.md) can build Incident live. The finished
+> result is [pull request #4](https://github.com/tewarishishir/dataforge/pull/4).
+
+[![checks](https://github.com/tewarishishir/dataforge/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/tewarishishir/dataforge/actions/workflows/checks.yml)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/tewarishishir/dataforge)](https://github.com/tewarishishir/dataforge/releases/tag/v0.1.0)
+[![Discussions](https://img.shields.io/github/discussions/tewarishishir/dataforge)](https://github.com/tewarishishir/dataforge/discussions)
+
 Four agent skills that build data pipelines, with no knowledge of your data in
 any of them.
 
@@ -8,6 +22,13 @@ catalogs, domains, entities, grains, job names, and naming grammar — lives in
 one generated manifest. The skills read it. They never contain it. That
 boundary is what makes the same skills work across two different data
 platforms, and it is also why this repository could be published at all.
+
+[![Issue #3 to merged pull request #4: twelve files of pipeline, schema, and test code, every gate passing, deployed to two DuckDB zones and reconciled to source](assets/demo-pr.png)](https://github.com/tewarishishir/dataforge/pull/4)
+
+That is a real run. [Issue #3](https://github.com/tewarishishir/dataforge/issues/3)
+asked for incident metrics; `forge-builder` produced
+[pull request #4](https://github.com/tewarishishir/dataforge/pull/4). Run it
+yourself with [DEMO.md](examples/support-desk/DEMO.md).
 
 ```bash
 brew install duckdb
@@ -62,11 +83,17 @@ on the pull request afterward.
 
 ## Install
 
-The skills are plain Markdown and work with any agent that can read files. For
-native packaging:
+The skills are plain Markdown and work with any agent that can read files.
 
 ```bash
-git clone https://github.com/<owner>/dataforge.git
+git clone https://github.com/tewarishishir/dataforge.git
+```
+
+Claude Code can install from this repository directly:
+
+```bash
+claude plugin marketplace add tewarishishir/dataforge
+claude plugin install dataforge@dataforge
 ```
 
 | Agent | Points at |
@@ -75,13 +102,20 @@ git clone https://github.com/<owner>/dataforge.git
 | Cursor | `.cursor-plugin/plugin.json` |
 | GitHub Copilot | `.github/agents/*.agent.md` |
 
-All three are generated from `skills/*/SKILL.md` by `node scripts/package.mjs`.
-CI fails if they drift, so the source stays single.
+The agent packages and `.claude-plugin/marketplace.json` are generated from
+`skills/*/SKILL.md` by `node scripts/package.mjs`. CI fails if they drift, so
+the source stays single.
 
 ## Status
 
-Beta. The DuckDB adapter and the GitHub Issues intake are new in `0.1.0` and
-are exercised by the example project rather than by production use. See
-[CHANGELOG.md](CHANGELOG.md).
+Beta. The DuckDB adapter and the GitHub Issues intake are new in
+[`0.1.0`](https://github.com/tewarishishir/dataforge/releases/tag/v0.1.0) and
+are exercised by the example project rather than by production use.
+
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Adopters](ADOPTERS.md)
+- [Cite this project](CITATION.cff)
+- [Discussions](https://github.com/tewarishishir/dataforge/discussions)
 
 MIT licensed.

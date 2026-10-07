@@ -20,4 +20,11 @@ You will leave with a clear model for when to build a skill instead of writing a
 - assets/ — Images, diagrams, and recordings.
 - resources/ — Supporting links and examples.
 
+## Demos
+
+- [dataforge](demos/dataforge/) — Shishir's four agent skills that build data
+  pipelines from a project manifest, issue to pull request.
+  Canonical repository: [tewarishishir/dataforge](https://github.com/tewarishishir/dataforge).
+  Recording: [assets/recordings/Dataforge.mp4](assets/recordings/Dataforge.mp4).
+
 Materials are in progress. Folders are placeholders for now.

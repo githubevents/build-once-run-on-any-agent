@@ -3,6 +3,10 @@
   "displayName": "Dataforge",
   "description": "Universal data platform skill framework for metric pipeline engineering, data exploration, and deployment orchestration.",
   "license": "MIT",
+  "author": {
+    "name": "Shishir Tewari"
+  },
+  "repository": "https://github.com/tewarishishir/dataforge",
   "keywords": [
     "dataforge",
     "data-platform",
