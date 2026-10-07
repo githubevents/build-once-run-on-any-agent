@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using these metadata.
+title: Dataforge
+abstract: >-
+  Four agent skills that build metric pipelines from a project manifest.
+  The skills never contain catalogs, tables, or domain names. Adapters
+  cover Databricks and DuckDB.
+authors:
+  - family-names: Tewari
+    given-names: Shishir
+version: 0.1.0
+date-released: 2026-09-28
+license: MIT
+repository-code: https://github.com/tewarishishir/dataforge
+url: https://github.com/tewarishishir/dataforge
+keywords:
+  - agent skills
+  - data pipelines
+  - duckdb
+  - databricks

@@ -5,10 +5,11 @@
  *   node scripts/package.mjs            write the generated files
  *   node scripts/package.mjs --check    exit 1 if any generated file is stale
  *
- * SKILL.md is the only hand-maintained source. Three targets are derived from
- * it: GitHub Copilot custom agents, the Claude Code plugin manifest, and the
- * Cursor plugin manifest. The --check mode runs in CI so the three can never
- * drift apart from the source or from each other.
+ * SKILL.md is the only hand-maintained source. Four targets are derived from
+ * it: GitHub Copilot custom agents, the Claude Code plugin manifest, the
+ * Cursor plugin manifest, and the Claude Code marketplace catalog. The
+ * --check mode runs in CI so they can never drift apart from the source or
+ * from each other.
  */
 
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from "node:fs";
@@ -26,6 +27,10 @@ const PACKAGE = {
   description:
     "Universal data platform skill framework for metric pipeline engineering, data exploration, and deployment orchestration.",
   license: "MIT",
+  author: {
+    name: "Shishir Tewari",
+  },
+  repository: "https://github.com/tewarishishir/dataforge",
   keywords: [
     "dataforge",
     "data-platform",
@@ -154,6 +159,38 @@ function pluginManifest(version, { skills, hooks }) {
   return JSON.stringify({ ...PACKAGE, version, skills, hooks }, null, 2) + "\n";
 }
 
+/**
+ * Catalog so `claude plugin marketplace add tewarishishir/dataforge` works before
+ * the plugin is accepted into Anthropic's directory. The plugin entry omits
+ * `version`: plugin.json is the authority, and a second copy here would mask
+ * it. The catalog-level version still tracks skill_version so this file
+ * cannot drift.
+ */
+function marketplaceManifest(version) {
+  return (
+    JSON.stringify(
+      {
+        name: PACKAGE.name,
+        owner: { name: PACKAGE.author.name },
+        version,
+        description: PACKAGE.description,
+        plugins: [
+          {
+            name: PACKAGE.name,
+            source: "./",
+            description: PACKAGE.description,
+            author: PACKAGE.author,
+            repository: PACKAGE.repository,
+            license: PACKAGE.license,
+          },
+        ],
+      },
+      null,
+      2,
+    ) + "\n"
+  );
+}
+
 function build() {
   const skills = readSkills();
   const version = readVersion();
@@ -170,6 +207,7 @@ function build() {
     join(".cursor-plugin", "plugin.json"),
     pluginManifest(version, { skills: "skills", hooks: "hooks/cursor.json" }),
   );
+  outputs.set(join(".claude-plugin", "marketplace.json"), marketplaceManifest(version));
   return outputs;
 }
 
