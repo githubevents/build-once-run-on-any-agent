@@ -9,7 +9,7 @@ html, body { margin: 0; height: 100%; }
 body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); background: #b98552; overflow: hidden; -webkit-font-smoothing: antialiased; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; }
+.stage { position: fixed; inset: 0; overflow: hidden; touch-action: pan-y; }
 #scene { display: block; width: 100%; height: 100%; cursor: grab; opacity: 0; transition: opacity .6s var(--ease); }
 #scene.is-ready { opacity: 1; }
 #scene.is-dragging { cursor: grabbing; }

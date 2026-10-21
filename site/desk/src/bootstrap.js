@@ -3,20 +3,32 @@ const fallback = (reason, error) => {
   location.replace(new URL("flat/", location.href));
 };
 
-const connection = navigator.connection;
-const small = matchMedia("(max-width: 819px), (max-height: 499px)").matches;
-const slow = navigator.deviceMemory <= 2 || navigator.hardwareConcurrency <= 2 ||
-  connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType ?? "");
+const force3D = new URLSearchParams(location.search).get("3d") === "1";
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const canvas = document.getElementById("scene");
 
-if (small || slow || reducedMotion) {
-  fallback("small viewport, constrained device, or reduced motion");
+if (reducedMotion && !force3D) {
+  fallback("reduced motion");
 } else {
   let context, contextError;
   try {
-    context = canvas.getContext("webgl2", { antialias: false, powerPreference: "high-performance" });
+    context = canvas.getContext("webgl2", {
+      antialias: false, powerPreference: "high-performance",
+      failIfMajorPerformanceCaveat: !force3D,
+    });
+    if (context && !force3D) {
+      const debug = context.getExtension("WEBGL_debug_renderer_info");
+      const renderer = [
+        context.getParameter(context.RENDERER),
+        debug ? context.getParameter(debug.UNMASKED_RENDERER_WEBGL) : "",
+      ].join(" ");
+      if (/swiftshader|llvmpipe|softpipe|lavapipe|basic render/i.test(renderer)) {
+        context = null;
+        contextError = new Error(`Software renderer: ${renderer}`);
+      }
+    }
   } catch (error) {
+    context = null;
     contextError = error;
   }
   if (!context) {
@@ -42,7 +54,7 @@ if (small || slow || reducedMotion) {
         finished = true;
         clearTimeout(timer);
       }
-      if (!new URLSearchParams(location.search).has("capture")) {
+      if (!force3D && !new URLSearchParams(location.search).has("capture")) {
         // Allow shader compilation to settle before measuring sustained frame time.
         let previous = performance.now(), frames = 0, elapsed = 0, warmup = 90;
         const measure = (now) => {

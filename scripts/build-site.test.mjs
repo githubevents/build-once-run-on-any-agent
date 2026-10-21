@@ -84,6 +84,7 @@ test("no-deck build includes public assets only and clears stale slides", async 
   }
   assert.match(flat, /src="\.\.\/assets\/recordings\/Dataforge.mp4"/);
   assert.match(flat, /href="#dialog-demos"/);
+  assert.match(flat, /href="\.\.\/\?3d=1">Try 3D/);
   for (const name of ["decal-mask.png", "decal-mask-screen.png", "decal-mask-base.png"]) {
     const mask = await readFile(path.join(output, "assets", name));
     assert.deepEqual(mask.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));

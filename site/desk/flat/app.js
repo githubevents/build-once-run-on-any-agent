@@ -14,13 +14,4 @@
     });
   });
 
-  // On portrait screens the desk pans sideways. Start centred on the laptop.
-  const stage = document.getElementById('stage');
-  const centre = () => {
-    if (stage.scrollWidth > stage.clientWidth) {
-      stage.scrollLeft = stage.scrollWidth * 0.495 - stage.clientWidth / 2;
-    }
-  };
-  window.addEventListener('load', centre);
-  window.addEventListener('resize', centre);
 })();

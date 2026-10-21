@@ -9,8 +9,6 @@ const LABELS = {
 const canvas = document.getElementById('scene');
 const tip = document.getElementById('tip');
 const nav = document.getElementById('objects');
-const coarse = matchMedia('(pointer: coarse)').matches;
-const small = Math.min(screen.width, screen.height) < 820 || coarse;
 const q = new URLSearchParams(location.search);
 
 const W = await fetch('assets/world.json').then((r) => {
@@ -18,7 +16,6 @@ const W = await fetch('assets/world.json').then((r) => {
   return r.json();
 });
 const renderer = new THREE.WebGLRenderer({ canvas, context, antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 2));
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xd9cdbd);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.02, 60);
@@ -110,8 +107,9 @@ const clampGoal = () => {
   goal.zoom = Math.max(L.zoomMin, Math.min(L.zoomMax, goal.zoom));
 };
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), qy = new THREE.Quaternion();
+let framingScale = 1;
 function place() {
-  const r = R0 * state.zoom;
+  const r = R0 * state.zoom * framingScale;
   tmp.copy(ref).multiplyScalar(Math.sin(state.tilt)).addScaledVector(upAxis, Math.cos(state.tilt));
   qy.setFromAxisAngle(upAxis, state.yaw); tmp.applyQuaternion(qy);
   camera.position.copy(target).addScaledVector(tmp, r);
@@ -120,15 +118,20 @@ function place() {
   camera.up.copy(up);
   camera.lookAt(target);
 }
-// Fit: the still must cover the viewport at the front view (like object-fit: cover), with a little extra room on phones.
+// Preserve the desktop crop; back the camera away to fit the full desk in portrait.
 function resize() {
   const w = innerWidth, h = innerHeight;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2, Math.sqrt(4.2e6 / (w * h))));
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   const vf = W.front.vfov * D2R, hf = W.front.hfov * D2R;
   const vNeeded = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect);
   camera.fov = Math.min(W.front.vfov, vNeeded / D2R); // landscape: cover, like the still
-  if (w < h) camera.fov = Math.min(vNeeded / D2R, 78); // portrait: widen toward the whole desk width
+  framingScale = 1;
+  if (w < h) {
+    camera.fov = W.front.vfov;
+    framingScale = Math.max(1, Math.tan(hf / 2) / (camera.aspect * Math.tan(vf / 2))) * 1.08;
+  }
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
@@ -240,7 +243,9 @@ canvas.addEventListener('pointermove', (e) => {
     if (drag.moved > 6) {
       canvas.classList.add('is-dragging'); setHover(null);
       const k = 3.2 / Math.max(innerWidth, 600);
-      goal.yaw -= dx * k; goal.tilt += dy * k * 0.7; clampGoal();
+      goal.yaw -= dx * k;
+      if (e.pointerType !== 'touch') goal.tilt += dy * k * 0.7;
+      clampGoal();
     }
     return;
   }
@@ -254,8 +259,8 @@ const end = (e) => {
     if (!wasDrag && e.type === 'pointerup') {
       const o = pickAt(e.clientX, e.clientY);
       if (o) {
-        if (e.pointerType !== 'mouse' && hover !== o) { setHover(o); tipAtObject(o); setTimeout(() => activate(o), 260); }
-        else activate(o);
+        if (e.pointerType !== 'mouse') { setHover(o); tipAtObject(o); }
+        activate(o);
       } else setHover(null);
     } else suppressClick = performance.now() + 250;
     drag = null;

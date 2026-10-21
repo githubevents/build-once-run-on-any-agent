@@ -24,11 +24,20 @@ the repository does not use Git LFS and this does not require it.
 
 Drag to orbit through 360 degrees; arrow keys orbit/tilt, and Home resets the
 view. Every device using the 3D view loads `desk-500k.spz`; the uncleaned 150k
-scene is not included. Small viewports (under 820 px wide or 500 px high), reduced
-motion, very low memory/core counts, data saver/2G, unavailable WebGL2,
-initialization failures/timeouts, lost WebGL contexts, and sustained rendering
-below 18 fps select `flat/`. The flat version keeps all nine hotspots and both
-panels, including when JavaScript is disabled.
+scene is not included. Phones and tablets use 3D by default, with the whole desk
+fitted to portrait screens. One-finger horizontal dragging spins the desk;
+vertical gestures remain available for native page scrolling. Tap a hotspot to
+open it. Pixel ratio is capped at 2 and a 4.2-million-pixel canvas budget.
+
+Reduced motion, unavailable WebGL2, software renderers (SwiftShader, llvmpipe,
+softpipe, lavapipe, Basic Render), major performance caveats, initialization
+failures/timeouts, lost contexts, and sustained rendering below 18 fps select
+`flat/`. Screen size, touch input, memory/core counts, and connection type do not
+select the fallback. The flat page fits the whole desk and keeps all nine
+hotspots and both panels, including when JavaScript is disabled. Its "Try 3D"
+link uses `?3d=1` to bypass reduced-motion, software/caveat and frame-rate
+screening for that attempt; unavailable WebGL2 and scene/context failures still
+fall back safely.
 
 The original `decal-mask.png`, `decal-mask-screen.png`, and `decal-mask-base.png`
 in `assets/` are used exactly as referenced by the supplied source and world
