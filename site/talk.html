@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Slides | Build once, run on any agent</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme = param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="talk.css">
+</head>
+<body>
+  <nav aria-label="Presentation links">
+    <a href="./">Back to the talk</a>
+    <a href="slides/talk.pdf">Download PDF</a>
+  </nav>
+  <main class="reveal" aria-label="Talk slides">
+    <div class="slides">
+      <!-- SLIDES -->
+    </div>
+  </main>
+  <noscript><p>Slide navigation needs JavaScript. <a href="slides/talk.pdf">Read the PDF instead.</a></p></noscript>
+  <script src="vendor/reveal/reveal.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      history: true,
+      controls: true,
+      progress: true,
+      slideNumber: "c/t",
+      transition: "none",
+      backgroundTransition: "none",
+      width: 1600,
+      height: 900,
+      margin: 0.04,
+      disableLayout: false
+    });
+  </script>
+</body>
+</html>

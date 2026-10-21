@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proof-agent"
+version = "0.1.0"
+description = "Adversarial verification for AI agent work"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["pyyaml>=6.0", "requests>=2.25.0", "github-copilot-sdk>=1.0.8"]
+
+[project.urls]
+Homepage = "https://github.com/AndreaGriffiths11/proof-agent"
+
+[project.scripts]
+proof-agent-parse-verdict = "proof_agent.cli:parse_verdict_cli"
+proof-agent-build-prompt = "proof_agent.cli:build_prompt_cli"
+proof-agent-verify-byok = "proof_agent.byok:main"
+proof-agent-verify-copilot = "proof_agent.copilot_sdk:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
