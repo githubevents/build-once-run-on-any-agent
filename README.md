@@ -79,6 +79,8 @@ In **Settings > Pages > Build and deployment**, select **GitHub Actions**.
 After the changes reach `main`, `.github/workflows/pages.yml` builds and deploys
 only `dist/`. Pull requests build the site without publishing it.
 
-Expected address after deployment:
-`https://githubevents.github.io/build-once-run-on-any-agent/`.
-The site needs no Express server or separate repository.
+The deployed address is shown under **Settings > Pages** once built; find it
+there rather than assuming a fixed domain, since it depends on repo visibility
+and the GitHub instance hosting Pages. While this repository is private, the
+site requires GitHub sign-in to view. The site needs no Express server or
+separate repository.
