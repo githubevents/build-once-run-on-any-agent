@@ -1,8 +1,10 @@
 # Talk website
 
-Static Reveal.js site for GitHub Pages. The landing page leads with the talk,
-followed by the two demo recordings and skill links. Until the deck arrives,
-it shows "Slides coming soon."
+Static desk landing page for GitHub Pages, with a Reveal.js deck viewer when a
+deck is supplied. The laptop opens both demo recordings and skill links; the
+ideas note opens the about panel and README. Other desk objects link directly
+to the repository, slides folder, speakers, playlist, and Procore.
+The GitHub sticker intentionally remains a marked `#survey` placeholder.
 
 ## Build locally
 
@@ -13,6 +15,25 @@ python3 -m http.server 8080 --directory dist
 ```
 
 Open `http://localhost:8080`. Requires Node.js 22 or later.
+
+The shipped scene and flat fallback live in `site/desk/`. The build bundles
+`site/desk/src/bootstrap.js` and `app.js` with the pinned Three.js, Spark, and
+esbuild versions; no CDN or runtime npm access is required. All site URLs are
+relative so Pages project subpaths work. The SPZ files are under 8 MB each;
+the repository does not use Git LFS and these do not require it.
+
+Drag to orbit through 360 degrees; arrow keys orbit/tilt, and Home resets the
+view. Desktop uses `desk-500k.spz`; moderately constrained devices use
+`desk-150k.spz`. Small viewports (under 820 px wide or 500 px high), reduced
+motion, very low memory/core counts, data saver/2G, unavailable WebGL2,
+initialization failures/timeouts, lost WebGL contexts, and sustained rendering
+below 18 fps select `flat/`. The flat version keeps all nine hotspots and both
+panels, including when JavaScript is disabled.
+
+The supplied archive omitted the three decal masks its source required.
+The small SVG masks in `assets/` restore cutouts from the supplied `decal.jpg`.
+Each object has its own mask to avoid projecting neighboring objects onto its
+surface. The scene, camera, and hotspot coordinates are otherwise unchanged.
 
 ## Add the deck
 
