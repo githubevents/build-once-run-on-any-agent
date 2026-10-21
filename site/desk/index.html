@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Build once, run on any agent</title>
+  <meta name="description" content="A practical guide to agent skills. Andrea Griffiths and Shishir Tewari at GitHub Universe 2026.">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="stage" id="stage">
+    <h1 class="sr-only">Build once, run on any agent: a practical guide to agent skills</h1>
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="loading" aria-hidden="true"></div>
+    <div class="tip" id="tip" aria-hidden="true"></div>
+    <nav id="objects" aria-label="Desk">
+      <button data-id="laptop" data-dialog="demos" aria-haspopup="dialog">Laptop: open the demos</button>
+      <button data-id="ideas" data-dialog="about" aria-haspopup="dialog">Ideas note: what this is</button>
+      <a data-id="slides" href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/slides" target="_blank" rel="noopener">Slides note: open the slides folder on GitHub</a>
+      <a data-id="code" href="https://github.com/githubevents/build-once-run-on-any-agent" target="_blank" rel="noopener">Paper stack: open the code on GitHub</a>
+      <a data-id="phone" href="https://www.youtube.com/playlist?list=PL0lo9MOBetEFHlePrJbm4e5XJV-_NSfgW" target="_blank" rel="noopener">Phone: watch GitHub Checkout on YouTube</a>
+      <a data-id="andrea" href="https://x.com/acolombiadev" target="_blank" rel="noopener">Andrea Griffiths on X</a>
+      <a data-id="shishir" href="https://www.linkedin.com/in/shishir-tewari-36113514/" target="_blank" rel="noopener">Shishir Tewari on LinkedIn</a>
+      <a data-id="procore" href="https://www.procore.com/" target="_blank" rel="noopener">Procore website</a>
+      <!-- TODO: survey URL from Andrea -->
+      <a data-id="github" href="#survey" data-placeholder="survey" aria-label="GitHub survey (link coming later)">GitHub survey</a>
+    </nav>
+  </main>
+
+  <dialog class="panel" id="dialog-demos" aria-labelledby="demos-title">
+    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <h2 id="demos-title">Demos</h2>
+    <article>
+      <h3>Proof Agent</h3>
+      <p>Andrea's independent verifier follows a pull request through findings,
+        corrections, and verdicts backed by evidence.</p>
+      <video controls playsinline preload="none" poster="proof-agent.jpg" aria-label="Proof Agent narrated demo, 3 minutes 52 seconds">
+        <source src="assets/recordings/proof-agent-narrated.mp4" type="video/mp4">
+        <a href="assets/recordings/proof-agent-narrated.mp4">Download the Proof Agent demo</a>
+      </video>
+      <a href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-agent">Get the skill and action</a>
+    </article>
+    <article>
+      <h3>Dataforge</h3>
+      <p>Shishir's four skills turn a project manifest and an issue into a data pipeline.</p>
+      <video controls playsinline preload="none" poster="dataforge.jpg" aria-label="Dataforge demo">
+        <source src="assets/recordings/Dataforge.mp4" type="video/mp4">
+        <a href="assets/recordings/Dataforge.mp4">Download the Dataforge demo</a>
+      </video>
+      <a href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/dataforge">Get the skills and walkthrough</a>
+    </article>
+    <ul class="links">
+      <li><a href="https://github.com/githubevents/build-once-run-on-any-agent/blob/main/demos/dataforge/examples/support-desk/DEMO.md" target="_blank" rel="noopener">Walkthrough</a></li>
+      <li><a href="https://github.com/tewarishishir/dataforge" target="_blank" rel="noopener">tewarishishir/dataforge</a></li>
+    </ul>
+    <a href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-review">Also: proof-review, for verification under load</a>
+  </dialog>
+
+  <dialog class="panel" id="dialog-about" aria-labelledby="about-title">
+    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <a href="https://github.com/githubevents/build-once-run-on-any-agent/blob/main/README.md"><h2 id="about-title">Build once, run on any agent</h2></a>
+    <p>Most developers use AI the same way: open a chat, type a prompt, move on. The context disappears. The next step starts from scratch. Andrea Griffiths builds them for her own recurring work: files any coding agent can run. Shishir Tewari builds them for a data engineering team at Procore, where a skill has to encode senior-engineer judgment and survive production. Different scale, same format. The file you write for yourself tonight is the same file that runs a team’s pipeline.</p>
+    <p>You will leave with a clear model for when to build a skill instead of writing another prompt.</p>
+    <!-- DECK_LINKS -->
+    <dl class="layout">
+      <dt>demos/</dt><dd>Demo code and walkthroughs.</dd>
+      <dt>slides/</dt><dd>Presentation materials.</dd>
+      <dt>assets/</dt><dd>Images, diagrams, and recordings.</dd>
+      <dt>resources/</dt><dd>Supporting links and examples.</dd>
+    </dl>
+  </dialog>
+
+  <noscript><meta http-equiv="refresh" content="0; url=flat/"></noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

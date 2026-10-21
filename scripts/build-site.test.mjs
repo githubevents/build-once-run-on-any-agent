@@ -49,4 +49,45 @@ test("no-deck build includes public assets only and clears stale slides", async 
   assert.doesNotMatch(html, /<!-- DECK_LINKS -->/);
   assert.equal((html.match(/<video /g) ?? []).length, 2);
   assert.equal(await readFile(path.join(output, "assets/recordings/Dataforge.mp4"), "utf8"), "media fixture");
+  assert.ok(files.includes("app.js"));
+  assert.ok(files.includes("chunks"));
+  assert.ok((await readFile(path.join(output, "app.js"))).length < 10000,
+    "Flat fallback detection must not download the 3D renderer");
+  assert.ok(!files.includes("src"));
+  assert.ok((await readFile(path.join(output, "assets/desk-500k.spz"))).length > 0);
+  const assetFiles = await readdir(path.join(output, "assets"));
+  assert.ok(!assetFiles.includes("desk-150k.spz"));
+  assert.ok(!assetFiles.some((name) => /^decal-mask.*\.svg$/.test(name)));
+  const chunks = await readdir(path.join(output, "chunks"));
+  const rendererSource = (await Promise.all(chunks.filter((name) => name.endsWith(".js"))
+    .map((name) => readFile(path.join(output, "chunks", name), "utf8")))).join("\n");
+  assert.match(rendererSource, /assets\/desk-500k\.spz/);
+  assert.doesNotMatch(rendererSource, /desk-150k|desk-\$\{/);
+  const flat = await readFile(path.join(output, "flat/index.html"), "utf8");
+  for (const page of [html, flat]) {
+    for (const url of [
+      "https://github.com/githubevents/build-once-run-on-any-agent/tree/main/slides",
+      "https://github.com/githubevents/build-once-run-on-any-agent",
+      "https://www.youtube.com/playlist?list=PL0lo9MOBetEFHlePrJbm4e5XJV-_NSfgW",
+      "https://x.com/acolombiadev",
+      "https://www.linkedin.com/in/shishir-tewari-36113514/",
+      "https://www.procore.com/",
+      "https://github.com/githubevents/build-once-run-on-any-agent/blob/main/README.md",
+      "https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-agent",
+      "https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-review",
+      "https://github.com/githubevents/build-once-run-on-any-agent/blob/main/demos/dataforge/examples/support-desk/DEMO.md",
+    ]) assert.ok(page.includes(`href="${url}"`), `Missing link ${url}`);
+    assert.match(page, /href="#survey"[^>]*data-placeholder="survey"|data-placeholder="survey"[^>]*href="#survey"/);
+    assert.doesNotMatch(page, /(?:href|src)="\//);
+    assert.doesNotMatch(page, /<!-- DECK_LINKS -->/);
+    assert.equal((page.match(/<video /g) ?? []).length, 2);
+  }
+  assert.match(flat, /src="\.\.\/assets\/recordings\/Dataforge.mp4"/);
+  assert.match(flat, /href="#dialog-demos"/);
+  assert.match(flat, /href="\.\.\/\?3d=1">Try 3D/);
+  for (const name of ["decal-mask.png", "decal-mask-screen.png", "decal-mask-base.png"]) {
+    const mask = await readFile(path.join(output, "assets", name));
+    assert.deepEqual(mask.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    assert.deepEqual(mask, await readFile(path.join(source, "site/desk/assets", name)));
+  }
 });

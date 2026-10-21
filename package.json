@@ -4,12 +4,17 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-site.mjs",
-    "test": "node --test scripts/build-site.test.mjs"
+    "test": "node --test scripts/*.test.mjs"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
     "reveal.js": "6.0.2"
+  },
+  "devDependencies": {
+    "@sparkjsdev/spark": "2.4.0",
+    "esbuild": "0.28.2",
+    "three": "0.180.0"
   }
 }

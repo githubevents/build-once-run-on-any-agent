@@ -1,0 +1,175 @@
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Caveat"; src: url("assets/fonts/Caveat.ttf") format("truetype"); font-weight: 400 700; font-display: block; }
+
+:root {
+  --ink: #16161d;
+  --muted: #5b5b66;
+  --wood: #b98552;
+  --focus: #ffffff;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font: 400 16px/1.55 "Inter", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--wood);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Stage: blurred copy of the desk fills any letterbox */
+.stage {
+  position: relative;
+  width: 100vw; height: 100vh; height: 100svh;
+  display: grid; place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+.stage::before {
+  content: ""; position: absolute; inset: -60px; z-index: -1;
+  background: url("assets/desk.jpg") center / cover;
+  filter: blur(40px) saturate(1.05) brightness(.9);
+}
+
+.desk {
+  position: relative;
+  aspect-ratio: 1672 / 941;
+  width: min(100vw, calc(100svh * 1672 / 941));
+  container-type: size;
+  box-shadow: 0 30px 80px -30px rgb(0 0 0 / .45);
+}
+.desk-img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
+
+.try-3d { position: fixed; bottom: 12px; left: 12px; color: #fff; font-size: 12px; }
+
+/* Absolutely placed layers, in percent of the image */
+.screen, .note-label, .sticker, .spot { position: absolute; }
+
+/* Laptop screen */
+.screen {
+  left: 29.84%; top: 5.1%; width: 39.77%; height: 39.1%;
+  display: grid; grid-template-columns: 24% 1fr;
+  background: #111522;
+  color: #c9d1e3;
+  font: 400 1.25cqh/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  clip-path: polygon(0 0, 100% 0, 99.4% 100%, 1.2% 100%);
+  overflow: hidden;
+  pointer-events: none;
+}
+.screen-side { background: #121720; padding: 2.4cqh 1.2cqh; display: grid; align-content: start; gap: .5cqh; color: #9aa3b5; border-right: 1px solid #222838; }
+.screen-side div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1cqh; }
+.screen-side .screen-repo { color: #e6e9f0; font-weight: 600; padding-left: 0; margin-bottom: .4cqh; }
+.screen-side .is-active { color: #e6e9f0; background: #1f2a44; border-radius: .3cqh; }
+.screen-main { display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.screen-tab { padding: 1.2cqh 2cqh; color: #e6e9f0; border-bottom: 1px solid #222838; background: #0f131d; }
+.screen-code { margin: 0; padding: 2cqh 2.4cqh; font: inherit; white-space: pre-wrap; color: #c9d1e3; }
+.screen-code .h { color: #7ab7ff; font-weight: 600; }
+.screen-code .l { color: #8fd18a; }
+
+/* Handwritten label on the blue note, matching "ideas" */
+.note-label {
+  left: 17.0%; top: 52.6%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  font: 500 4.6cqh/1 "Caveat", "Comic Sans MS", cursive;
+  color: #141414;
+  pointer-events: none;
+  opacity: .92;
+}
+
+/* Stickers */
+.sticker { pointer-events: none; filter: drop-shadow(0 .25cqh .35cqh rgb(0 0 0 / .35)); }
+.sticker-gh {
+  left: 34.9%; top: 70.9%; width: 3.4%;
+  aspect-ratio: 1; padding: .55%;
+  background: #fff; border-radius: 50%;
+  transform: rotate(-8deg);
+}
+.sticker-procore {
+  left: 60.1%; top: 72.4%; width: 7%; height: 3.3%;
+  display: grid; place-items: center;
+  background: #fff; border-radius: 99px; padding: 0 .9%;
+  transform: rotate(4deg);
+}
+.sticker-procore img { width: 100%; height: auto; display: block; }
+
+/* Hotspots */
+.spot {
+  left: calc(var(--l) * 1%); top: calc(var(--t) * 1%);
+  width: calc(var(--w) * 1%); height: calc(var(--h) * 1%);
+  border: 0; padding: 0; margin: 0; background: transparent; cursor: pointer;
+  border-radius: 1.2cqh;
+  outline: 2px solid transparent; outline-offset: 0;
+  transition: outline-color .18s var(--ease), background-color .18s var(--ease), box-shadow .18s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.spot:hover, .spot:focus-visible {
+  outline-color: rgb(255 255 255 / .9);
+  background: rgb(255 255 255 / .08);
+  box-shadow: 0 0 0 6px rgb(255 255 255 / .18);
+}
+.tip {
+  position: absolute; left: 50%; bottom: calc(100% + 1.2cqh);
+  transform: translate(-50%, 4px);
+  padding: .5em .8em;
+  font: 500 clamp(12px, 1.7cqh, 15px)/1 "Inter", system-ui, sans-serif;
+  color: #fff; background: rgb(18 18 24 / .88);
+  border-radius: 999px; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s var(--ease), transform .18s var(--ease);
+}
+.spot:hover .tip, .spot:focus-visible .tip { opacity: 1; transform: translate(-50%, 0); }
+
+/* Laptop reaches the top edge, so its label sits inside */
+.tip-in { bottom: auto; top: 1.4cqh; }
+
+/* Touch: no hover, so keep labels quietly visible */
+@media (hover: none) {
+  .tip { opacity: 1; transform: translate(-50%, 0); background: rgb(18 18 24 / .72); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot, .tip { transition: none; }
+}
+
+/* Panels */
+.panel {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100svh - 48px);
+  padding: 32px 32px 28px;
+  border: 0; border-radius: 16px;
+  background: #fbfaf7; color: var(--ink);
+  box-shadow: 0 24px 80px -20px rgb(0 0 0 / .5);
+}
+.panel::backdrop { background: rgb(20 14 8 / .45); backdrop-filter: blur(3px); }
+.panel[open] { animation: rise .22s var(--ease); }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .panel[open] { animation: none; } }
+.panel h2 { margin: 0 0 14px; font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -.01em; padding-right: 32px; }
+.panel h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+.panel p { margin: 0 0 14px; color: #33333b; }
+.panel video { display: block; width: 100%; margin: 12px 0; }
+.panel article + article { margin-top: 24px; }
+.close {
+  position: absolute; top: 14px; right: 14px;
+  width: 36px; height: 36px; border: 0; border-radius: 50%;
+  background: transparent; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer;
+}
+.close:hover, .close:focus-visible { background: #eeece6; color: var(--ink); }
+.links { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.links a, .panel a { color: var(--ink); }
+.links a {
+  display: inline-block; padding: 8px 14px; border-radius: 999px;
+  background: #efede7; text-decoration: none; font-weight: 500; font-size: 14px;
+}
+.links a:hover, .links a:focus-visible { background: #e3e0d7; }
+.layout { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 18px 0 0; font-size: 14px; }
+.layout dt { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 500; }
+.layout dd { margin: 0; color: var(--muted); }
+:focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
+.spot:focus-visible { outline: 2px solid #fff; outline-offset: 0; }
