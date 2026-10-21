@@ -1,0 +1,96 @@
+name: 'proof-agent-verify'
+description: 'Adversarial verification for AI-generated code using the GitHub Copilot SDK or custom providers (Anthropic, Azure OpenAI, OpenAI-compatible)'
+author: 'Andrea Griffiths'
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  github-token:
+    description: 'GitHub token for authentication (defaults to GITHUB_TOKEN)'
+    required: false
+    default: ${{ github.token }}
+  models-token:
+    description: 'Deprecated. Use copilot-token or github-token instead.'
+    required: false
+    default: ''
+  copilot-token:
+    description: 'GitHub token with copilot-requests:write permission (defaults to github-token).'
+    required: false
+    default: ''
+  base-ref:
+    description: 'Git ref to compare against (e.g., origin/main, HEAD~1)'
+    required: false
+    default: 'origin/main'
+  force:
+    description: 'Force verification even if threshold not met (bypasses file count checks)'
+    required: false
+    default: 'false'
+  block-on-fail:
+    description: 'Exit with code 1 if verification fails (blocks PR merge)'
+    required: false
+    default: 'true'
+  post-comment:
+    description: 'Post verification result as PR comment'
+    required: false
+    default: 'true'
+  comment-mode:
+    description: 'Comment format: full, summary, or collapse (default: collapse)'
+    required: false
+    default: 'collapse'
+  max-comment-length:
+    description: 'Maximum comment length in characters (default: 2000)'
+    required: false
+    default: '2000'
+
+outputs:
+  verdict:
+    description: 'Verification verdict (PASS, FAIL, or PARTIAL)'
+    value: ${{ steps.verify.outputs.verdict }}
+  summary:
+    description: 'Verification summary (full text)'
+    value: ${{ steps.verify.outputs.summary }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install proof-agent Python package
+      shell: bash
+      run: |
+        # Install requests first (needed for BYOK)
+        pip install "requests>=2.25.0" "pyyaml>=6.0" "github-copilot-sdk>=1.0.8"
+        python -m copilot download-runtime
+        # Then install proof-agent without deps (to avoid conflicts)
+        pip install --force-reinstall --no-deps "${{ github.action_path }}"
+
+    - name: Generate verification prompt
+      id: prompt
+      shell: bash
+      run: |
+        bash ${{ github.action_path }}/scripts/verify.sh "${{ inputs.base-ref }}" > verification_prompt.txt
+        echo "Generated verification prompt ($(wc -l < verification_prompt.txt) lines)"
+    
+    - name: Run verification via GitHub Copilot
+      id: verify
+      shell: bash
+      run: bash ${{ github.action_path }}/entrypoint.sh
+      env:
+        COPILOT_GITHUB_TOKEN: ${{ inputs.copilot-token != '' && inputs.copilot-token || inputs.github-token }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_MODELS_TOKEN: ${{ inputs.models-token }}
+        INPUT_COPILOT_TOKEN: ${{ inputs.copilot-token }}
+        INPUT_FORCE: ${{ inputs.force }}
+        INPUT_BLOCK_ON_FAIL: ${{ inputs.block-on-fail }}
+        INPUT_POST_COMMENT: ${{ inputs.post-comment }}
+        INPUT_COMMENT_MODE: ${{ inputs.comment-mode }}
+        INPUT_MAX_COMMENT_LENGTH: ${{ inputs.max-comment-length }}
+        
+        # BYOK env vars inherit from job/step level - no override here
+        # Users set these via job-level env: or step-level env:
+        # PROOF_AGENT_PROVIDER_BASE_URL, PROOF_AGENT_PROVIDER_TYPE, etc.
+        
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
