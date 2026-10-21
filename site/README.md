@@ -27,7 +27,12 @@ view. Every device using the 3D view loads `desk-500k.spz`; the uncleaned 150k
 scene is not included. Phones and tablets use 3D by default, with the whole desk
 fitted to portrait screens. One-finger horizontal dragging spins the desk;
 vertical gestures remain available for native page scrolling. Tap a hotspot to
-open it. Pixel ratio is capped at 2 and a 4.2-million-pixel canvas budget.
+open it. Portrait framing widens the lens at the original camera position,
+rather than backing into the generated room. The desk fills the width; a
+portrait-only fade follows its projected bounds to hide the surrounding
+panorama, floor, and duplicate desk. Touch tilt and zoom are locked to the
+original downward-facing pose; horizontal orbit remains unrestricted.
+Pixel ratio is capped at 2 and a 4.2-million-pixel canvas budget.
 
 Reduced motion, unavailable WebGL2, software renderers (SwiftShader, llvmpipe,
 softpipe, lavapipe, Basic Render), major performance caveats, initialization

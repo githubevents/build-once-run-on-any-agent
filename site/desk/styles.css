@@ -69,3 +69,12 @@ body { background: #d9cdbd; }
 .loading { position: fixed; inset: 0; background: url("assets/poster.jpg") center / cover no-repeat; transition: opacity .6s var(--ease); pointer-events: none; }
 .is-ready .loading { opacity: 0; }
 @media (orientation: portrait) { .loading { background: #d9cdbd; } }
+@media (orientation: portrait) {
+  #scene {
+    mask-image: linear-gradient(to bottom,
+      transparent calc(var(--desk-top, 35vh) - 8px),
+      #000 calc(var(--desk-top, 35vh) + 12px),
+      #000 var(--desk-bottom, 65vh),
+      transparent calc(var(--desk-bottom, 65vh) + 24px));
+  }
+}

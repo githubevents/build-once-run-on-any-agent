@@ -9,6 +9,7 @@ const LABELS = {
 const canvas = document.getElementById('scene');
 const tip = document.getElementById('tip');
 const nav = document.getElementById('objects');
+const touch = matchMedia('(pointer: coarse)').matches;
 const q = new URLSearchParams(location.search);
 
 const W = await fetch('assets/world.json').then((r) => {
@@ -105,11 +106,11 @@ const clampGoal = () => {
   if (L.yawMax < 180) goal.yaw = Math.max(-L.yawMax * D2R, Math.min(L.yawMax * D2R, goal.yaw));
   goal.tilt = Math.max(L.tiltMin * D2R, Math.min(L.tiltMax * D2R, goal.tilt));
   goal.zoom = Math.max(L.zoomMin, Math.min(L.zoomMax, goal.zoom));
+  if (touch) { goal.tilt = tilt0; goal.zoom = 1; }
 };
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), qy = new THREE.Quaternion();
-let framingScale = 1;
 function place() {
-  const r = R0 * state.zoom * framingScale;
+  const r = R0 * state.zoom;
   tmp.copy(ref).multiplyScalar(Math.sin(state.tilt)).addScaledVector(upAxis, Math.cos(state.tilt));
   qy.setFromAxisAngle(upAxis, state.yaw); tmp.applyQuaternion(qy);
   camera.position.copy(target).addScaledVector(tmp, r);
@@ -118,19 +119,17 @@ function place() {
   camera.up.copy(up);
   camera.lookAt(target);
 }
-// Preserve the desktop crop; back the camera away to fit the full desk in portrait.
+// Widen the portrait lens without moving the camera outside the captured room.
 function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2, Math.sqrt(4.2e6 / (w * h))));
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
-  const vf = W.front.vfov * D2R, hf = W.front.hfov * D2R;
+  const hf = W.front.hfov * D2R;
   const vNeeded = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect);
   camera.fov = Math.min(W.front.vfov, vNeeded / D2R); // landscape: cover, like the still
-  framingScale = 1;
   if (w < h) {
-    camera.fov = W.front.vfov;
-    framingScale = Math.max(1, Math.tan(hf / 2) / (camera.aspect * Math.tan(vf / 2))) * 1.08;
+    camera.fov = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect * 0.95) / D2R;
   }
   camera.updateProjectionMatrix();
 }
@@ -171,6 +170,21 @@ for (const [id, o] of Object.entries(W.objects)) {
   objects[id] = { id, mesh, center: c, normal: nrm, facing, hi: 0, want: 0, visible: true, el: nav.querySelector(`[data-id="${id}"]`) };
 }
 const meshes = Object.values(objects).map((o) => o.mesh);
+const maskPoint = new THREE.Vector3();
+function updatePortraitMask() {
+  if (innerWidth >= innerHeight) return;
+  let top = Infinity, bottom = -Infinity;
+  for (const o of Object.values(objects)) {
+    const positions = o.mesh.geometry.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+      maskPoint.fromBufferAttribute(positions, i).project(camera);
+      const y = (1 - maskPoint.y) * innerHeight / 2;
+      top = Math.min(top, y); bottom = Math.max(bottom, y);
+    }
+  }
+  canvas.style.setProperty('--desk-top', `${top}px`);
+  canvas.style.setProperty('--desk-bottom', `${bottom + 4}px`);
+}
 
 // Occlusion: a hotspot shows only if its centre faces the camera and the splats don't cover it.
 const occRay = new THREE.Raycaster();
@@ -283,7 +297,14 @@ for (const o of Object.values(objects)) if (o.el) {
   o.el.addEventListener('blur', () => { if (hover === o) setHover(null); });
   if (o.el.dataset.dialog) o.el.addEventListener('click', (e) => { e.preventDefault(); activate(o); });
 }
-for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+for (const d of document.querySelectorAll('dialog')) {
+  let backdropPress = false;
+  d.addEventListener('pointerdown', (e) => { backdropPress = e.target === d; });
+  d.addEventListener('click', (e) => {
+    if (e.target === d && backdropPress) d.close();
+    backdropPress = false;
+  });
+}
 
 // ---------- loop ----------
 let last = performance.now();
@@ -293,6 +314,7 @@ function frame(now) {
     const k = 1 - Math.exp(-dt * 9);
     state.yaw += (goal.yaw - state.yaw) * k; state.tilt += (goal.tilt - state.tilt) * k; state.zoom += (goal.zoom - state.zoom) * k;
     place();
+    updatePortraitMask();
     updateNameplates();
     updateVisibility(now);
     for (const o of Object.values(objects)) {
@@ -322,7 +344,7 @@ window.__desk = {
   state, goal, objects, camera, splat,
   ready: () => splatReady,
   step: (ms = 1000 / 30) => new Promise((done) => pending.push({ ms, done })),
-  set: (yawDeg, tiltDeg, zoom = 1, snap = false) => { goal.yaw = yawDeg * D2R; goal.tilt = tiltDeg * D2R; goal.zoom = zoom; if (snap) Object.assign(state, { yaw: goal.yaw, tilt: goal.tilt, zoom }); },
+  set: (yawDeg, tiltDeg, zoom = 1, snap = false) => { goal.yaw = yawDeg * D2R; goal.tilt = tiltDeg * D2R; goal.zoom = zoom; clampGoal(); if (snap) Object.assign(state, goal); },
   tilt0: tilt0 / D2R,
   screenOf: (id) => { const p = objects[id].center.clone().project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight, visible: objects[id].visible }; },
   visibleIds: () => Object.values(objects).filter((o) => o.visible).map((o) => o.id),
