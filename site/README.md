@@ -19,21 +19,20 @@ Open `http://localhost:8080`. Requires Node.js 22 or later.
 The shipped scene and flat fallback live in `site/desk/`. The build bundles
 `site/desk/src/bootstrap.js` and `app.js` with the pinned Three.js, Spark, and
 esbuild versions; no CDN or runtime npm access is required. All site URLs are
-relative so Pages project subpaths work. The SPZ files are under 8 MB each;
-the repository does not use Git LFS and these do not require it.
+relative so Pages project subpaths work. The SPZ file is under 8 MB;
+the repository does not use Git LFS and this does not require it.
 
 Drag to orbit through 360 degrees; arrow keys orbit/tilt, and Home resets the
-view. Desktop uses `desk-500k.spz`; moderately constrained devices use
-`desk-150k.spz`. Small viewports (under 820 px wide or 500 px high), reduced
+view. Every device using the 3D view loads `desk-500k.spz`; the uncleaned 150k
+scene is not included. Small viewports (under 820 px wide or 500 px high), reduced
 motion, very low memory/core counts, data saver/2G, unavailable WebGL2,
 initialization failures/timeouts, lost WebGL contexts, and sustained rendering
 below 18 fps select `flat/`. The flat version keeps all nine hotspots and both
 panels, including when JavaScript is disabled.
 
-The supplied archive omitted the three decal masks its source required.
-The small SVG masks in `assets/` restore cutouts from the supplied `decal.jpg`.
-Each object has its own mask to avoid projecting neighboring objects onto its
-surface. The scene, camera, and hotspot coordinates are otherwise unchanged.
+The original `decal-mask.png`, `decal-mask-screen.png`, and `decal-mask-base.png`
+in `assets/` are used exactly as referenced by the supplied source and world
+configuration. The scene, camera, and hotspot coordinates are unchanged.
 
 ## Add the deck
 

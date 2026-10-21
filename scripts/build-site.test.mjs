@@ -55,7 +55,14 @@ test("no-deck build includes public assets only and clears stale slides", async 
     "Flat fallback detection must not download the 3D renderer");
   assert.ok(!files.includes("src"));
   assert.ok((await readFile(path.join(output, "assets/desk-500k.spz"))).length > 0);
-  assert.ok((await readFile(path.join(output, "assets/desk-150k.spz"))).length > 0);
+  const assetFiles = await readdir(path.join(output, "assets"));
+  assert.ok(!assetFiles.includes("desk-150k.spz"));
+  assert.ok(!assetFiles.some((name) => /^decal-mask.*\.svg$/.test(name)));
+  const chunks = await readdir(path.join(output, "chunks"));
+  const rendererSource = (await Promise.all(chunks.filter((name) => name.endsWith(".js"))
+    .map((name) => readFile(path.join(output, "chunks", name), "utf8")))).join("\n");
+  assert.match(rendererSource, /assets\/desk-500k\.spz/);
+  assert.doesNotMatch(rendererSource, /desk-150k|desk-\$\{/);
   const flat = await readFile(path.join(output, "flat/index.html"), "utf8");
   for (const page of [html, flat]) {
     for (const url of [
@@ -77,7 +84,9 @@ test("no-deck build includes public assets only and clears stale slides", async 
   }
   assert.match(flat, /src="\.\.\/assets\/recordings\/Dataforge.mp4"/);
   assert.match(flat, /href="#dialog-demos"/);
-  for (const id of ["screen", "base", "notebook", "code", "phone", "andrea", "shishir"]) {
-    assert.match(await readFile(path.join(output, "assets", `decal-mask-${id}.svg`), "utf8"), /<svg /);
+  for (const name of ["decal-mask.png", "decal-mask-screen.png", "decal-mask-base.png"]) {
+    const mask = await readFile(path.join(output, "assets", name));
+    assert.deepEqual(mask.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    assert.deepEqual(mask, await readFile(path.join(source, "site/desk/assets", name)));
   }
 });

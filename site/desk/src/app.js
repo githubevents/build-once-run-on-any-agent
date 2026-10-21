@@ -25,18 +25,13 @@ const camera = new THREE.PerspectiveCamera(45, 1, 0.02, 60);
 const spark = new SparkRenderer({ renderer });
 scene.add(spark);
 
-const requested = q.get('res');
-const constrained = small || navigator.deviceMemory <= 4 || navigator.hardwareConcurrency <= 4 ||
-  navigator.connection?.effectiveType === '3g';
-const res = ['150k', '500k'].includes(requested) ? requested : (constrained ? '150k' : '500k');
-
 // ---------- decals: the still's own pixels for flat, printed things (screen, notes, paper, phone, nameplates) ----------
 // Marble regenerates fine print as mush; these lie exactly on the desk surface and reproduce the still at the front view.
 // Opaque and depth-writing, drawn before the splats, so anything standing in front of them still covers them.
 const nameplateDecals = [];
 {
   const tl = new THREE.TextureLoader();
-  const maskFiles = Object.keys(W.decals).map((id) => `decal-mask-${id}.svg`);
+  const maskFiles = [...new Set(['decal-mask.png', ...Object.values(W.decals).map((d) => d.mask).filter(Boolean)])];
   const [dTex, ...mTexs] = await Promise.all([tl.loadAsync('assets/decal.jpg'), ...maskFiles.map((f) => tl.loadAsync('assets/' + f))]);
   const masks = Object.fromEntries(maskFiles.map((f, i) => [f, mTexs[i]]));
   const aniso = renderer.capabilities.getMaxAnisotropy();
@@ -52,9 +47,9 @@ const nameplateDecals = [];
         c = mix(c, wood, uBack);
       }
       gl_FragColor = vec4(c, 1.0); }`;
-  for (const [id, d] of Object.entries(W.decals)) {
+  for (const d of Object.values(W.decals)) {
     const mat = new THREE.ShaderMaterial({
-      uniforms: { map: { value: dTex }, mask: { value: masks[`decal-mask-${id}.svg`] }, uBack: { value: 0 } },
+      uniforms: { map: { value: dTex }, mask: { value: masks[d.mask || 'decal-mask.png'] }, uBack: { value: 0 } },
       vertexShader: vs, fragmentShader: fs,
       side: THREE.FrontSide, // seen from behind (e.g. the back of the lid) the decal is culled
     });
@@ -80,7 +75,7 @@ const nameplateDecals = [];
     const m = new THREE.Mesh(g, mat); m.renderOrder = -1; scene.add(m);
   }
 }
-const splat = new SplatMesh({ url: `assets/desk-${res}.spz` });
+const splat = new SplatMesh({ url: 'assets/desk-500k.spz' });
 splat.quaternion.set(1, 0, 0, 0); // Marble worlds are y-down / z-forward
 scene.add(splat);
 const _np = new THREE.Vector3();
