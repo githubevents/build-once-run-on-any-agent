@@ -59,7 +59,7 @@ test("no-deck build includes public assets only and clears stale slides", async 
   assert.match(html, /<img [^>]*src="assets\/decal.jpg"[^>]*width="1280" height="720"/);
   assert.doesNotMatch(html, /<canvas|type="module"|Try 3D/);
   assert.deepEqual([...html.matchAll(/data-id="([^"]+)"/g)].map((match) => match[1]),
-    ["laptop", "ideas", "slides", "code", "phone", "andrea", "shishir", "procore", "github"]);
+    ["laptop", "ideas", "slides", "code", "phone", "headphones", "andrea", "shishir", "procore", "github"]);
   for (const panel of ["demos", "about"]) {
     assert.ok(html.includes(`href="#dialog-${panel}"`));
     assert.ok(html.includes(`<dialog class="panel" id="dialog-${panel}"`));
@@ -70,6 +70,7 @@ test("no-deck build includes public assets only and clears stale slides", async 
     "https://github.com/githubevents/build-once-run-on-any-agent/tree/main/slides",
     "https://github.com/githubevents/build-once-run-on-any-agent",
     "https://www.youtube.com/watch?v=ZQ0Qq6LlAmI",
+    "https://music.youtube.com/watch?v=Frti3HfdNLw",
     "https://x.com/acolombiadev",
     "https://www.linkedin.com/in/shishir-tewari-36113514/",
     "https://www.procore.com/",

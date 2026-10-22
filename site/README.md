@@ -3,8 +3,8 @@
 Static desk landing page for GitHub Pages, with a Reveal.js deck viewer when a
 deck is supplied. The laptop opens both demo recordings and skill links; the
 ideas note opens the about panel and README. Other desk objects link directly
-to the repository, slides folder, speakers, GitHub September updates video, Procore,
-and the session survey (GitHub sticker).
+to the repository, slides folder, speakers, GitHub September updates video, a YouTube
+Music playlist (headphones), Procore, and the session survey (GitHub sticker).
 
 ## Build locally
 
