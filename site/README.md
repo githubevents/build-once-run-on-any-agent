@@ -27,6 +27,11 @@ view. Every device using the 3D view loads `desk-500k.spz`; the uncleaned 150k
 scene is not included. Yaw is limited to +/-8 degrees and tilt to +/-2 degrees
 around the original pose, avoiding the generated scene's distorted side views.
 Touch tilt and zoom stay locked to the original downward-facing pose.
+At the original pose the camera matches the source photo (`decal.jpg`), so a
+camera-locked quad shows that sharp photo over the splats, below the hotspot
+highlights. It fades out within about 1 degree of orbit or 2% zoom, and the view
+eases back to the original pose 0.8 seconds after dragging, wheel zoom, or arrow
+keys stop. In portrait its edges feather into the surrounding splat scene.
 Phones and tablets use 3D by default. The fixed, edge-to-edge canvas follows its
 container through a ResizeObserver; picking uses the same canvas bounds.
 Portrait uses an 88-degree vertical FOV with a 2.2% horizontal lens shift
