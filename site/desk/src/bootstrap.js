@@ -5,12 +5,12 @@ const fallback = (reason, error) => {
   location.replace(new URL("flat/", location.href));
 };
 
-const force3D = new URLSearchParams(location.search).get("3d") === "1";
-const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const params = new URLSearchParams(location.search);
+const force3D = params.get("room") === "1" || params.get("3d") === "1";
 const canvas = document.getElementById("scene");
 
-if (reducedMotion && !force3D) {
-  fallback("reduced motion");
+if (params.get("flat") === "1") {
+  fallback("flat view requested");
 } else {
   let context, contextError;
   try {
@@ -24,7 +24,7 @@ if (reducedMotion && !force3D) {
         context.getParameter(context.RENDERER),
         debug ? context.getParameter(debug.UNMASKED_RENDERER_WEBGL) : "",
       ].join(" ");
-      if (/swiftshader|llvmpipe|softpipe|lavapipe|basic render/i.test(renderer)) {
+      if (/swiftshader|llvmpipe|softpipe|lavapipe|software|basic render/i.test(renderer)) {
         context = null;
         contextError = new Error(`Software renderer: ${renderer}`);
       }
@@ -61,9 +61,6 @@ if (reducedMotion && !force3D) {
         onSample: (sample) => {
           window.__desk.performance = sample;
           if (sample.reduced) console.info("Desk: lowering rendering resolution.", sample);
-        },
-        onFallback: (fps) => {
-          if (!force3D) fallback(`sustained ${fps.toFixed(1)} fps at minimum pixel ratio ${desk.pixelRatio().toFixed(2)}`);
         },
       });
       document.addEventListener("visibilitychange", monitor.reset);

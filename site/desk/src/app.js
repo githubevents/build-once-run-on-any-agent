@@ -7,6 +7,7 @@ const LABELS = {
   andrea: 'Andrea on X', shishir: 'Shishir on LinkedIn', procore: 'Procore', github: 'Survey',
 };
 const canvas = document.getElementById('scene');
+const stage = canvas.parentElement;
 const tip = document.getElementById('tip');
 const nav = document.getElementById('objects');
 const touch = matchMedia('(pointer: coarse)').matches;
@@ -93,12 +94,12 @@ const R0 = off0.length();
 const ref = new THREE.Vector3().copy(off0).projectOnPlane(upAxis).normalize(); // yaw 0 direction
 const side = new THREE.Vector3().crossVectors(upAxis, ref).normalize();
 const tilt0 = off0.angleTo(upAxis); // angle from the desk normal
-const L = W.limits;
+const D2R = Math.PI / 180;
+const L = { ...W.limits, yawMax: 8, tiltMin: tilt0 / D2R - 2, tiltMax: tilt0 / D2R + 2 };
 const state = { yaw: 0, tilt: tilt0, zoom: 1 };
 const goal = { ...state };
-const D2R = Math.PI / 180;
 const clampGoal = () => {
-  if (L.yawMax < 180) goal.yaw = Math.max(-L.yawMax * D2R, Math.min(L.yawMax * D2R, goal.yaw));
+  goal.yaw = Math.max(-L.yawMax * D2R, Math.min(L.yawMax * D2R, goal.yaw));
   goal.tilt = Math.max(L.tiltMin * D2R, Math.min(L.tiltMax * D2R, goal.tilt));
   goal.zoom = Math.max(L.zoomMin, Math.min(L.zoomMax, goal.zoom));
   if (touch) { goal.tilt = tilt0; goal.zoom = 1; }
@@ -114,25 +115,28 @@ function place() {
   camera.up.copy(up);
   camera.lookAt(target);
 }
-// Widen the portrait lens without moving the camera outside the captured room.
+let width, height;
 function resize() {
-  const w = innerWidth, h = innerHeight;
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2, Math.sqrt(4.2e6 / (w * h)), resolutionLimit));
+  const { width: w, height: h } = stage.getBoundingClientRect();
+  if (!w || !h) return;
+  width = w; height = h;
+  renderer.setPixelRatio(Math.min(Math.max(1, Math.min(devicePixelRatio, 2, Math.sqrt(4.2e6 / (w * h)))), resolutionLimit));
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   const hf = W.front.hfov * D2R;
   const vNeeded = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect);
   camera.fov = Math.min(W.front.vfov, vNeeded / D2R); // landscape: cover, like the still
   if (w < h) {
-    camera.fov = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect * 0.95) / D2R;
+    camera.fov = Math.min(36, vNeeded / D2R);
   }
   camera.updateProjectionMatrix();
   dirty = true;
 }
+new ResizeObserver(resize).observe(stage);
 addEventListener('resize', resize); resize();
 function reduceResolution() {
   const current = renderer.getPixelRatio();
-  const minimum = Math.min(devicePixelRatio, 0.75, Math.sqrt(4.2e6 / (innerWidth * innerHeight)));
+  const minimum = Math.min(devicePixelRatio, 0.75, Math.sqrt(4.2e6 / (width * height)));
   const next = Math.max(minimum, current * 0.75);
   if (next >= current - 0.01) return false;
   resolutionLimit = next;
@@ -173,21 +177,6 @@ for (const [id, o] of Object.entries(W.objects)) {
   objects[id] = { id, mesh, center: c, normal: nrm, facing, hi: 0, want: 0, visible: true, el: nav.querySelector(`[data-id="${id}"]`) };
 }
 const meshes = Object.values(objects).map((o) => o.mesh);
-const maskPoint = new THREE.Vector3();
-function updatePortraitMask() {
-  if (innerWidth >= innerHeight) return;
-  let top = Infinity, bottom = -Infinity;
-  for (const o of Object.values(objects)) {
-    const positions = o.mesh.geometry.attributes.position;
-    for (let i = 0; i < positions.count; i++) {
-      maskPoint.fromBufferAttribute(positions, i).project(camera);
-      const y = (1 - maskPoint.y) * innerHeight / 2;
-      top = Math.min(top, y); bottom = Math.max(bottom, y);
-    }
-  }
-  canvas.style.setProperty('--desk-top', `${top}px`);
-  canvas.style.setProperty('--desk-bottom', `${bottom + 4}px`);
-}
 
 // Occlusion: a hotspot shows only if its centre faces the camera and the splats don't cover it.
 const occRay = new THREE.Raycaster();
@@ -235,7 +224,8 @@ function updateVisibility(now, force) {
 const pointer = new THREE.Vector2(), pick = new THREE.Raycaster();
 let hover = null, drag = null, splatReady = false;
 function pickAt(x, y) {
-  pointer.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
+  const rect = canvas.getBoundingClientRect();
+  pointer.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
   pick.setFromCamera(pointer, camera);
   const hits = pick.intersectObjects(meshes.filter((m) => objects[m.userData.id].visible), false);
   if (!hits.length) return null;
@@ -256,9 +246,13 @@ function setHover(o, x, y) {
   else tip.classList.remove('is-on');
 }
 function placeTip(x, y) { tip.style.transform = `translate(${Math.round(x + 14)}px, ${Math.round(y + 18)}px)`; }
-function tipAtObject(o) {
+function screenOf(o) {
   const p = o.center.clone().project(camera);
-  const x = (p.x + 1) / 2 * innerWidth, y = (1 - p.y) / 2 * innerHeight;
+  const rect = canvas.getBoundingClientRect();
+  return { x: rect.left + (p.x + 1) / 2 * rect.width, y: rect.top + (1 - p.y) / 2 * rect.height, visible: o.visible };
+}
+function tipAtObject(o) {
+  const { x, y } = screenOf(o);
   tip.style.transform = `translate(calc(${Math.round(x)}px - 50%), ${Math.round(y)}px)`;
 }
 function activate(o) {
@@ -277,7 +271,7 @@ canvas.addEventListener('pointermove', (e) => {
     drag.moved += Math.abs(dx) + Math.abs(dy);
     if (drag.moved > 6) {
       canvas.classList.add('is-dragging'); setHover(null);
-      const k = 3.2 / Math.max(innerWidth, 600);
+      const k = 3.2 / Math.max(width, 600);
       goal.yaw -= dx * k;
       if (e.pointerType !== 'touch') goal.tilt += dy * k * 0.7;
       clampGoal();
@@ -309,7 +303,7 @@ addEventListener('keydown', (e) => {
   if (document.querySelector('dialog[open]')) return;
   if (e.key === 'ArrowLeft') goal.yaw += s; else if (e.key === 'ArrowRight') goal.yaw -= s;
   else if (e.key === 'ArrowUp') goal.tilt -= s * 0.6; else if (e.key === 'ArrowDown') goal.tilt += s * 0.6;
-  else if (e.key === 'Home' || e.key === '0') { goal.yaw = Math.round(goal.yaw / (2 * Math.PI)) * 2 * Math.PI; goal.tilt = tilt0; goal.zoom = 1; }
+  else if (e.key === 'Home' || e.key === '0') { goal.yaw = 0; goal.tilt = tilt0; goal.zoom = 1; }
   else return;
   clampGoal();
 });
@@ -336,7 +330,7 @@ function frame(now) {
       const next = Math.abs(goal[key] - state[key]) < 1e-7 ? goal[key] : state[key] + (goal[key] - state[key]) * k;
       if (next !== state[key]) { state[key] = next; dirty = true; }
     }
-    if (dirty) { place(); updatePortraitMask(); updateNameplates(); }
+    if (dirty) { place(); updateNameplates(); }
     updateVisibility(now);
     for (const o of Object.values(objects)) {
       const target = o.want && o.visible ? 1 : 0;
@@ -364,7 +358,7 @@ renderer.setAnimationLoop(frame);
 window.__desk = {
   state, goal, objects, camera, splat,
   ready: () => splatReady,
-  screenOf: (id) => { const p = objects[id].center.clone().project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight, visible: objects[id].visible }; },
+  screenOf: (id) => screenOf(objects[id]),
 };
 return { reduceResolution, pixelRatio: () => renderer.getPixelRatio() };
 }

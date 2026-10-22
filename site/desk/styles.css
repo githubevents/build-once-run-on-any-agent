@@ -10,7 +10,7 @@ body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); ba
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .stage { position: fixed; inset: 0; overflow: hidden; touch-action: pan-y; }
-#scene { display: block; width: 100%; height: 100%; cursor: grab; opacity: 0; transition: opacity .6s var(--ease); }
+#scene { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; opacity: 0; transition: opacity .6s var(--ease); }
 #scene.is-ready { opacity: 1; }
 #scene.is-dragging { cursor: grabbing; }
 #scene.is-over { cursor: pointer; }
@@ -19,7 +19,7 @@ body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); ba
 #objects a, #objects button { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; }
 
 .tip {
-  position: absolute; left: 0; top: 0;
+  position: fixed; left: 0; top: 0;
   padding: .5em .8em;
   font: 500 14px/1 "Inter", system-ui, sans-serif;
   color: #fff; background: rgb(18 18 24 / .88);
@@ -68,13 +68,3 @@ body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); ba
 body { background: #d9cdbd; }
 .loading { position: fixed; inset: 0; background: url("assets/poster.jpg") center / cover no-repeat; transition: opacity .6s var(--ease); pointer-events: none; }
 .is-ready .loading { opacity: 0; }
-@media (orientation: portrait) { .loading { background: #d9cdbd; } }
-@media (orientation: portrait) {
-  #scene {
-    mask-image: linear-gradient(to bottom,
-      transparent calc(var(--desk-top, 35vh) - 8px),
-      #000 calc(var(--desk-top, 35vh) + 12px),
-      #000 var(--desk-bottom, 65vh),
-      transparent calc(var(--desk-bottom, 65vh) + 24px));
-  }
-}
