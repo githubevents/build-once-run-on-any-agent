@@ -22,17 +22,19 @@ esbuild versions; no CDN or runtime npm access is required. All site URLs are
 relative so Pages project subpaths work. The SPZ file is under 8 MB;
 the repository does not use Git LFS and this does not require it.
 
-Drag to orbit through 360 degrees; arrow keys orbit/tilt, and Home resets the
+Drag for front-facing parallax; arrow keys orbit/tilt, and Home resets the
 view. Every device using the 3D view loads `desk-500k.spz`; the uncleaned 150k
-scene is not included. Phones and tablets use 3D by default, with the whole desk
-fitted to portrait screens. One-finger horizontal dragging spins the desk;
-vertical gestures remain available for native page scrolling. Tap a hotspot to
-open it. Portrait framing widens the lens at the original camera position,
-rather than backing into the generated room. The desk fills the width; a
-portrait-only fade follows its projected bounds to hide the surrounding
-panorama, floor, and duplicate desk. Touch tilt and zoom are locked to the
-original downward-facing pose; horizontal orbit remains unrestricted.
-Pixel ratio starts capped at 2 and a 4.2-million-pixel canvas budget. Every
+scene is not included. Yaw is limited to +/-8 degrees and tilt to +/-2 degrees
+around the original pose, avoiding the generated scene's distorted side views.
+Touch tilt and zoom stay locked to the original downward-facing pose.
+Phones and tablets use 3D by default. The fixed, edge-to-edge canvas follows its
+container through a ResizeObserver; picking uses the same canvas bounds.
+Portrait uses a 92-degree vertical FOV to keep the laptop, both nameplates and
+all hotspots inside the front arc with a margin. It prioritizes access to every
+hotspot over hiding the generated surroundings; desktop's initial framing is
+unchanged. Drag horizontally or tap a visible hotspot.
+Pixel ratio starts between 1 and 2 with a 4.2-million-pixel budget (except when
+even DPR 1 exceeds that budget). Every
 four visible seconds, sustained rendering below 45 fps lowers pixel ratio by
 25%, down to 0.75 (or the initial cap if lower), without replacing the clean
 500k scene. Startup and hidden-tab time are excluded. Changes are logged to
@@ -44,16 +46,16 @@ repacking from making stationary details shimmer during orbit.
 Idle views skip GPU redraws; camera, highlights, resize, and Spark sort updates
 trigger rendering without lowering resolution.
 
-Reduced motion, unavailable WebGL2, software renderers (SwiftShader, llvmpipe,
-softpipe, lavapipe, Basic Render), major performance caveats, initialization
-failures/timeouts, lost contexts, or two consecutive four-second windows below
-10 fps after reaching minimum resolution select
-`flat/`. Screen size, touch input, memory/core counts, and connection type do not
-select the fallback. The flat page fits the whole desk and keeps all nine
-hotspots and both panels, including when JavaScript is disabled. Its "Try 3D"
-link uses `?3d=1` to bypass reduced-motion, software/caveat and frame-rate
-screening for that attempt; unavailable WebGL2 and scene/context failures still
-fall back safely.
+Unavailable WebGL2, software renderers (SwiftShader, llvmpipe, softpipe, lavapipe,
+Software, Basic Render), major performance caveats, scene failures/timeouts and
+lost contexts select `flat/`. Screen size, touch, user agent, reduced motion,
+memory/core counts, connection type and low frame rate do not select flat.
+Slow rendering lowers resolution through the same monitor without replacing 3D.
+Use `?room=1` to bypass software/caveat detection or `?flat=1` to select flat
+explicitly (flat takes precedence). The existing `?3d=1` retry still works.
+Missing WebGL2 and scene/context failures still fall back safely, even when forced.
+The flat page fits the whole desk and keeps all nine hotspots and both panels,
+including when JavaScript is disabled.
 
 The original `decal-mask.png`, `decal-mask-screen.png`, and `decal-mask-base.png`
 in `assets/` are used exactly as referenced by the supplied source and world

@@ -1,11 +1,10 @@
-export function createFrameMonitor({ pixelRatio, reduceResolution, onSample, onFallback }) {
-  let previous, warmup = 2000, elapsed = 0, frames = 0, stalledWindows = 0;
+export function createFrameMonitor({ pixelRatio, reduceResolution, onSample }) {
+  let previous, warmup = 2000, elapsed = 0, frames = 0;
   function reset() {
     previous = undefined;
     warmup = 2000;
     elapsed = 0;
     frames = 0;
-    stalledWindows = 0;
   }
   function sample(now, visible = true) {
     if (!visible) { reset(); return; }
@@ -19,12 +18,10 @@ export function createFrameMonitor({ pixelRatio, reduceResolution, onSample, onF
     const fps = frames * 1000 / elapsed;
     const before = pixelRatio();
     const reduced = fps < 45 && reduceResolution();
-    stalledWindows = !reduced && fps < 10 ? stalledWindows + 1 : 0;
     onSample({ fps, pixelRatio: pixelRatio(), previousPixelRatio: before, reduced });
     elapsed = 0;
     frames = 0;
     if (reduced) warmup = 2000;
-    if (stalledWindows >= 2) onFallback(fps);
   }
   return { sample, reset };
 }
