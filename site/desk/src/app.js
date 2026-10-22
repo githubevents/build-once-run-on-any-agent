@@ -28,6 +28,7 @@ scene.add(spark);
 
 // Printed details use the supplied photo, with splats still occluding them.
 const nameplateDecals = [];
+let stillTex;
 {
   const tl = new THREE.TextureLoader();
   const maskFiles = [...new Set(['decal-mask.png', ...Object.values(W.decals).map((d) => d.mask).filter(Boolean)])];
@@ -35,6 +36,7 @@ const nameplateDecals = [];
   const masks = Object.fromEntries(maskFiles.map((f, i) => [f, mTexs[i]]));
   const aniso = renderer.capabilities.getMaxAnisotropy();
   dTex.anisotropy = aniso; for (const t of mTexs) t.anisotropy = aniso;
+  stillTex = dTex;
   const vs = `varying vec2 vUv; varying vec2 vG; attribute vec2 grid; void main(){ vUv = uv; vG = grid; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
   // uBack: 0 = the still's pixels, 1 = plain dark walnut (the back of a nameplate). The geometry stays opaque either way.
   const fs = `uniform sampler2D map; uniform sampler2D mask; uniform float uBack; varying vec2 vUv; varying vec2 vG;
@@ -115,6 +117,28 @@ function place() {
   camera.up.copy(up);
   camera.lookAt(target);
 }
+// At rest the camera matches the source photo exactly, so show the sharp photo and fade to splats while orbiting.
+scene.add(camera);
+const still = new THREE.Mesh(
+  new THREE.PlaneGeometry(2 * Math.tan(W.front.hfov * D2R / 2), 2 * Math.tan(W.front.vfov * D2R / 2)),
+  new THREE.ShaderMaterial({
+    uniforms: { map: { value: stillTex }, uOpacity: { value: 1 }, uFeather: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `uniform sampler2D map; uniform float uOpacity; uniform float uFeather; varying vec2 vUv;
+      void main(){
+        vec2 e = min(vUv, 1.0 - vUv);
+        float edge = uFeather > 0.0 ? smoothstep(0.0, uFeather, e.x) * smoothstep(0.0, uFeather * 1.78, e.y) : 1.0;
+        gl_FragColor = vec4(texture2D(map, vUv).rgb, uOpacity * edge); }`,
+    transparent: true, depthTest: false, depthWrite: false,
+  }),
+);
+still.position.z = -1; still.renderOrder = 5; camera.add(still);
+function updateStill() {
+  const away = Math.abs(state.yaw) + Math.abs(state.tilt - tilt0) + Math.abs(state.zoom - 1);
+  const o = 1 - THREE.MathUtils.smoothstep(away, 0.002, 0.02);
+  still.material.uniforms.uOpacity.value = o;
+  still.visible = o > 0.001;
+}
 let width, height;
 function resize() {
   const { width: w, height: h } = stage.getBoundingClientRect();
@@ -131,6 +155,7 @@ function resize() {
   }
   if (w < h) camera.setViewOffset(w, h, -w * 0.022, 0, w, h);
   else camera.clearViewOffset();
+  still.material.uniforms.uFeather.value = w < h ? 0.04 : 0;
   camera.updateProjectionMatrix();
   dirty = true;
 }
@@ -264,7 +289,7 @@ function activate(o) {
 }
 const pointers = new Set();
 canvas.addEventListener('pointerdown', (e) => {
-  canvas.setPointerCapture(e.pointerId); pointers.add(e.pointerId);
+  canvas.setPointerCapture(e.pointerId); pointers.add(e.pointerId); clearTimeout(homeTimer);
   drag = pointers.size === 1 ? { x: e.clientX, y: e.clientY, moved: 0 } : null;
 });
 canvas.addEventListener('pointermove', (e) => {
@@ -282,6 +307,9 @@ canvas.addEventListener('pointermove', (e) => {
   }
   if (e.pointerType === 'mouse') { const o = pickAt(e.clientX, e.clientY); if (o !== hover) setHover(o, e.clientX, e.clientY); else if (o) placeTip(e.clientX, e.clientY); }
 });
+// Ease back to the photo-matched pose shortly after the user stops orbiting.
+let homeTimer;
+const settleHome = () => { clearTimeout(homeTimer); homeTimer = setTimeout(() => { goal.yaw = 0; goal.tilt = tilt0; goal.zoom = 1; }, 800); };
 const end = (e) => {
   pointers.delete(e.pointerId);
   if (!drag) return;
@@ -294,12 +322,13 @@ const end = (e) => {
         activate(o);
       } else setHover(null);
     }
+    if (wasDrag) settleHome();
     drag = null;
   }
 };
 canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
 canvas.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !drag) setHover(null); });
-canvas.addEventListener('wheel', (e) => { e.preventDefault(); goal.zoom *= Math.exp(e.deltaY * 0.0012); clampGoal(); }, { passive: false });
+canvas.addEventListener('wheel', (e) => { e.preventDefault(); goal.zoom *= Math.exp(e.deltaY * 0.0012); clampGoal(); settleHome(); }, { passive: false });
 addEventListener('keydown', (e) => {
   const s = 0.12;
   if (document.querySelector('dialog[open]')) return;
@@ -307,7 +336,7 @@ addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowUp') goal.tilt -= s * 0.6; else if (e.key === 'ArrowDown') goal.tilt += s * 0.6;
   else if (e.key === 'Home' || e.key === '0') { goal.yaw = 0; goal.tilt = tilt0; goal.zoom = 1; }
   else return;
-  clampGoal();
+  clampGoal(); settleHome();
 });
 for (const o of Object.values(objects)) if (o.el) {
   o.el.addEventListener('focus', () => { setHover(o); tipAtObject(o); });
@@ -332,7 +361,7 @@ function frame(now) {
       const next = Math.abs(goal[key] - state[key]) < 1e-7 ? goal[key] : state[key] + (goal[key] - state[key]) * k;
       if (next !== state[key]) { state[key] = next; dirty = true; }
     }
-    if (dirty) { place(); updateNameplates(); }
+    if (dirty) { place(); updateNameplates(); updateStill(); }
     updateVisibility(now);
     for (const o of Object.values(objects)) {
       const target = o.want && o.visible ? 1 : 0;
@@ -358,7 +387,7 @@ renderer.setAnimationLoop(frame);
 
 // Diagnostics used by the headed-browser regression harness.
 window.__desk = {
-  state, goal, objects, camera, splat,
+  state, goal, objects, camera, splat, still,
   ready: () => splatReady,
   screenOf: (id) => screenOf(objects[id]),
 };
