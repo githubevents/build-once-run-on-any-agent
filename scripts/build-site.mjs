@@ -4,7 +4,6 @@ import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { build } from "esbuild";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const recordings = ["proof-agent-narrated.mp4", "Dataforge.mp4"];
@@ -39,21 +38,9 @@ export async function buildSite({ source = root, output = path.join(root, "dist"
     for (const file of ["theme.css", "site.css", "proof-agent.jpg", "dataforge.jpg"]) {
       await cp(path.join(source, "site", file), path.join(output, file));
     }
-    for (const file of ["index.html", "styles.css", "assets", "flat"]) {
+    for (const file of ["index.html", "styles.css", "app.js", "assets"]) {
       await cp(path.join(source, "site/desk", file), path.join(output, file), { recursive: true });
     }
-    await build({
-      entryPoints: { app: path.join(source, "site/desk/src/bootstrap.js") },
-      outdir: output,
-      splitting: true,
-      chunkNames: "chunks/[name]-[hash]",
-      bundle: true,
-      minify: true,
-      format: "esm",
-      target: "es2022",
-      legalComments: "linked",
-      nodePaths: [path.join(root, "node_modules")],
-    });
     await mkdir(path.join(output, "assets/recordings"), { recursive: true });
     for (const file of recordings) {
       await cp(path.join(source, "assets/recordings", file), path.join(output, "assets/recordings", file));
@@ -61,11 +48,9 @@ export async function buildSite({ source = root, output = path.join(root, "dist"
     let index = await readFile(path.join(output, "index.html"), "utf8");
     index = index.replace("<!-- DECK_LINKS -->", deckLinks({ pdf: hasDeck, pptx: hasPptx }));
     await writeFile(path.join(output, "index.html"), index);
-    const flatPath = path.join(output, "flat/index.html");
-    const flat = await readFile(flatPath, "utf8");
-    const flatDeckLinks = deckLinks({ pdf: hasDeck, pptx: hasPptx })
-      .replaceAll('href="', 'href="../');
-    await writeFile(flatPath, flat.replace("<!-- DECK_LINKS -->", flatDeckLinks));
+    await mkdir(path.join(output, "flat"));
+    await writeFile(path.join(output, "flat/index.html"),
+      '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=../"><title>Desk</title><a href="../">Open the desk</a>');
     await writeFile(path.join(output, ".nojekyll"), "");
 
     if (!hasDeck) {

@@ -1,34 +1,28 @@
-@font-face { font-family: "Inter"; src: url("flat/assets/fonts/Inter-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Inter"; src: url("flat/assets/fonts/Inter-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Inter"; src: url("flat/assets/fonts/Inter-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
-@font-face { font-family: "Caveat"; src: url("flat/assets/fonts/Caveat.ttf") format("truetype"); font-weight: 400 700; font-display: block; }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
 
 :root { --ink: #16161d; --muted: #5b5b66; --ease: cubic-bezier(.2, .7, .2, 1); }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
-body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); background: #b98552; overflow: hidden; -webkit-font-smoothing: antialiased; }
+body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); background: #d9cdbd; overflow: hidden; -webkit-font-smoothing: antialiased; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.stage { position: fixed; inset: 0; overflow: hidden; touch-action: pan-y; }
-#scene { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; opacity: 0; transition: opacity .6s var(--ease); }
-#scene.is-ready { opacity: 1; }
-#scene.is-dragging { cursor: grabbing; }
-#scene.is-over { cursor: pointer; }
-
-/* Object list: invisible, reachable by keyboard and screen readers */
-#objects a, #objects button { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; }
-
-.tip {
-  position: fixed; left: 0; top: 0;
-  padding: .5em .8em;
-  font: 500 14px/1 "Inter", system-ui, sans-serif;
-  color: #fff; background: rgb(18 18 24 / .88);
-  border-radius: 999px; white-space: nowrap;
-  opacity: 0; pointer-events: none;
-  transition: opacity .18s var(--ease);
-  will-change: transform;
+.stage { position: fixed; inset: 0; overflow: hidden; }
+.desk {
+  position: absolute; left: 50%; top: 50%;
+  width: max(100%, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%);
 }
-.tip.is-on { opacity: 1; }
+.desk-photo { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+#objects { position: absolute; inset: 0; width: 100%; height: 100%; }
+.spot { fill: transparent; stroke: transparent; stroke-width: 36; cursor: pointer; }
+.spot:hover, .spot:focus-visible { fill: rgb(255 255 255 / .08); outline: none; }
+.spot:focus-visible { stroke: #fff; stroke-width: 2; }
+@media (orientation: portrait) {
+  /* Keep photo x=50..1194 visible with 12px margins. */
+  .desk { width: calc((100% - 24px) * 1280 / 1144); transform: translate(-48.6%, -50%); }
+}
 
 /* Panels */
 .panel {
@@ -51,6 +45,7 @@ body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); ba
 .close {
   position: absolute; top: 14px; right: 14px;
   width: 36px; height: 36px; border: 0; border-radius: 50%;
+  display: grid; place-items: center; text-decoration: none;
   background: transparent; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer;
 }
 .close:hover, .close:focus-visible { background: #eeece6; color: var(--ink); }
@@ -65,6 +60,3 @@ body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); ba
 .layout dt { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 500; }
 .layout dd { margin: 0; color: var(--muted); }
 :focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
-body { background: #d9cdbd; }
-.loading { position: fixed; inset: 0; background: url("assets/poster.jpg") center / cover no-repeat; transition: opacity .6s var(--ease); pointer-events: none; }
-.is-ready .loading { opacity: 0; }

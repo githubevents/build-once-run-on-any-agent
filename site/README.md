@@ -16,57 +16,16 @@ python3 -m http.server 8080 --directory dist
 
 Open `http://localhost:8080`. Requires Node.js 22 or later.
 
-The shipped scene and flat fallback live in `site/desk/`. The build bundles
-`site/desk/src/bootstrap.js` and `app.js` with the pinned Three.js, Spark, and
-esbuild versions; no CDN or runtime npm access is required. All site URLs are
-relative so Pages project subpaths work. The SPZ file is under 8 MB;
-the repository does not use Git LFS and this does not require it.
+The desk lives in `site/desk/`: the original sharp photo (`assets/decal.jpg`),
+aligned SVG hotspots, and a small script for the two panels. No 3D assets,
+renderer, or fallback are needed. Links and panels also work without JavaScript.
+All site URLs are relative so Pages project subpaths work; old `flat/` links
+redirect to the same desk.
 
-Drag for front-facing parallax; arrow keys orbit/tilt, and Home resets the
-view. Every device using the 3D view loads `desk-500k.spz`; the uncleaned 150k
-scene is not included. Yaw is limited to +/-8 degrees and tilt to +/-2 degrees
-around the original pose, avoiding the generated scene's distorted side views.
-Touch tilt and zoom stay locked to the original downward-facing pose.
-At the original pose the camera matches the source photo (`decal.jpg`), so a
-camera-locked quad shows that sharp photo over the splats, below the hotspot
-highlights. It fades out within about 1 degree of orbit or 2% zoom, and the view
-eases back to the original pose 0.8 seconds after dragging, wheel zoom, or arrow
-keys stop. In portrait its edges feather into the surrounding splat scene.
-Phones and tablets use 3D by default. The fixed, edge-to-edge canvas follows its
-container through a ResizeObserver; picking uses the same canvas bounds.
-Portrait uses an 88-degree vertical FOV with a 2.2% horizontal lens shift
-to keep the laptop, both nameplates, notebook and all hotspots near the screen edges
-with a margin. It prioritizes access to every
-hotspot over hiding the generated surroundings; desktop's initial framing is
-unchanged. Drag horizontally or tap a visible hotspot.
-Pixel ratio starts between 1 and 2 with a 4.2-million-pixel budget (except when
-even DPR 1 exceeds that budget). Every
-four visible seconds, sustained rendering below 45 fps lowers pixel ratio by
-25%, down to 0.75 (or the initial cap if lower), without replacing the clean
-500k scene. Startup and hidden-tab time are excluded. Changes are logged to
-the console; the latest sample is available as `window.__desk.performance`.
-Exact hotspot occlusion scans are cached by camera position and spread across
-frames after damping stops completely; taps still check occlusion before opening links.
-Spark uses full-precision intermediate splat centers to prevent camera-relative
-repacking from making stationary details shimmer during orbit.
-Idle views skip GPU redraws; camera, highlights, resize, and Spark sort updates
-trigger rendering without lowering resolution.
-
-Unavailable WebGL2, software renderers (SwiftShader, llvmpipe, softpipe, lavapipe,
-Software, Basic Render), major performance caveats, scene failures/timeouts and
-lost contexts select `flat/`. Screen size, touch, user agent, reduced motion,
-memory/core counts, connection type and low frame rate do not select flat.
-Slow rendering lowers resolution through the same monitor without replacing 3D.
-Use `?room=1` to bypass software/caveat detection or `?flat=1` to select flat
-explicitly (flat takes precedence). The existing `?3d=1` retry still works.
-Missing WebGL2 and scene/context failures still fall back safely, even when forced.
-The flat page fits the whole desk and keeps all nine hotspots and both panels,
-including when JavaScript is disabled.
-
-`decal-mask.png`, `decal-mask-screen.png`, and `decal-mask-base.png` in
-`assets/` keep the supplied shapes and file names, with edges smoothed so the
-shader's 0.5 cutoff follows sub-pixel contours instead of the 1280×720 pixel
-staircase. The scene, camera, and hotspot coordinates are unchanged.
+Desktop and landscape cover the viewport without stretching the photo.
+Portrait fits every hotspot and both nameplates across the available width,
+preserving the photo's aspect ratio against the page background. Click, tap,
+or use Tab and Enter to open a hotspot.
 
 ## Add the deck
 
