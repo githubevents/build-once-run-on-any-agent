@@ -29,8 +29,9 @@ around the original pose, avoiding the generated scene's distorted side views.
 Touch tilt and zoom stay locked to the original downward-facing pose.
 Phones and tablets use 3D by default. The fixed, edge-to-edge canvas follows its
 container through a ResizeObserver; picking uses the same canvas bounds.
-Portrait uses a 92-degree vertical FOV to keep the laptop, both nameplates and
-all hotspots inside the front arc with a margin. It prioritizes access to every
+Portrait uses an 88-degree vertical FOV with a 2.2% horizontal lens shift
+to keep the laptop, both nameplates, notebook and all hotspots near the screen edges
+with a margin. It prioritizes access to every
 hotspot over hiding the generated surroundings; desktop's initial framing is
 unchanged. Drag horizontally or tap a visible hotspot.
 Pixel ratio starts between 1 and 2 with a 4.2-million-pixel budget (except when

@@ -127,8 +127,10 @@ function resize() {
   const vNeeded = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect);
   camera.fov = Math.min(W.front.vfov, vNeeded / D2R); // landscape: cover, like the still
   if (w < h) {
-    camera.fov = 92;
+    camera.fov = 88;
   }
+  if (w < h) camera.setViewOffset(w, h, -w * 0.022, 0, w, h);
+  else camera.clearViewOffset();
   camera.updateProjectionMatrix();
   dirty = true;
 }
