@@ -56,25 +56,22 @@ if (reducedMotion && !force3D) {
         finished = true;
         clearTimeout(timer);
       }
-      if (!new URLSearchParams(location.search).has("capture")) {
-        const monitor = createFrameMonitor({
-          pixelRatio: desk.pixelRatio,
-          reduceResolution: desk.reduceResolution,
-          onSample: (sample) => {
-            window.__desk.performance = sample;
-            if (sample.reduced) console.info("Desk: lowering rendering resolution.", sample);
-          },
-          onFallback: (fps) => {
-            if (!force3D) fallback(`sustained ${fps.toFixed(1)} fps at minimum pixel ratio ${desk.pixelRatio().toFixed(2)}`);
-          },
-        });
-        document.addEventListener("visibilitychange", monitor.reset);
-        const measure = (now) => {
-          monitor.sample(now, !document.hidden);
-          requestAnimationFrame(measure);
-        };
+      const monitor = createFrameMonitor({
+        ...desk,
+        onSample: (sample) => {
+          window.__desk.performance = sample;
+          if (sample.reduced) console.info("Desk: lowering rendering resolution.", sample);
+        },
+        onFallback: (fps) => {
+          if (!force3D) fallback(`sustained ${fps.toFixed(1)} fps at minimum pixel ratio ${desk.pixelRatio().toFixed(2)}`);
+        },
+      });
+      document.addEventListener("visibilitychange", monitor.reset);
+      const measure = (now) => {
+        monitor.sample(now, !document.hidden);
         requestAnimationFrame(measure);
-      }
+      };
+      requestAnimationFrame(measure);
     } catch (error) {
       fail("3D scene failed to initialize", error);
     }

@@ -68,7 +68,7 @@ test("no-deck build includes public assets only and clears stale slides", async 
     for (const url of [
       "https://github.com/githubevents/build-once-run-on-any-agent/tree/main/slides",
       "https://github.com/githubevents/build-once-run-on-any-agent",
-      "https://www.youtube.com/playlist?list=PL0lo9MOBetEFHlePrJbm4e5XJV-_NSfgW",
+      "https://www.youtube.com/watch?v=ZQ0Qq6LlAmI",
       "https://x.com/acolombiadev",
       "https://www.linkedin.com/in/shishir-tewari-36113514/",
       "https://www.procore.com/",
