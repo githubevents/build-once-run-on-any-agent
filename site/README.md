@@ -38,7 +38,9 @@ four visible seconds, sustained rendering below 45 fps lowers pixel ratio by
 500k scene. Startup and hidden-tab time are excluded. Changes are logged to
 the console; the latest sample is available as `window.__desk.performance`.
 Exact hotspot occlusion scans are cached by camera position and spread across
-frames after orbit settles; taps still check occlusion before opening links.
+frames after damping stops completely; taps still check occlusion before opening links.
+Spark uses full-precision intermediate splat centers to prevent camera-relative
+repacking from making stationary details shimmer during orbit.
 Idle views skip GPU redraws; camera, highlights, resize, and Spark sort updates
 trigger rendering without lowering resolution.
 
