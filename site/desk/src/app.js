@@ -3,15 +3,15 @@ import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
 
 export async function startDesk(context, onError) {
 const LABELS = {
-  laptop: 'Demos', ideas: 'What this is', slides: 'Slides', code: 'The code', phone: 'GitHub Checkout',
+  laptop: 'Demos', ideas: 'What this is', slides: 'Slides', code: 'The code', phone: 'GitHub September updates',
   andrea: 'Andrea on X', shishir: 'Shishir on LinkedIn', procore: 'Procore', github: 'Survey',
 };
 const canvas = document.getElementById('scene');
 const tip = document.getElementById('tip');
 const nav = document.getElementById('objects');
 const touch = matchMedia('(pointer: coarse)').matches;
-const q = new URLSearchParams(location.search);
 let resolutionLimit = Infinity;
+let dirty = true;
 
 const W = await fetch('assets/world.json').then((r) => {
   if (!r.ok) throw new Error(`World configuration: HTTP ${r.status}`);
@@ -21,12 +21,10 @@ const renderer = new THREE.WebGLRenderer({ canvas, context, antialias: false, po
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xd9cdbd);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.02, 60);
-const spark = new SparkRenderer({ renderer });
+const spark = new SparkRenderer({ renderer, onDirty: () => { dirty = true; } });
 scene.add(spark);
 
-// ---------- decals: the still's own pixels for flat, printed things (screen, notes, paper, phone, nameplates) ----------
-// Marble regenerates fine print as mush; these lie exactly on the desk surface and reproduce the still at the front view.
-// Opaque and depth-writing, drawn before the splats, so anything standing in front of them still covers them.
+// Printed details use the supplied photo, with splats still occluding them.
 const nameplateDecals = [];
 {
   const tl = new THREE.TextureLoader();
@@ -50,7 +48,7 @@ const nameplateDecals = [];
     const mat = new THREE.ShaderMaterial({
       uniforms: { map: { value: dTex }, mask: { value: masks[d.mask || 'decal-mask.png'] }, uBack: { value: 0 } },
       vertexShader: vs, fragmentShader: fs,
-      side: THREE.FrontSide, // seen from behind (e.g. the back of the lid) the decal is culled
+      side: THREE.FrontSide,
     });
     const G = d.grid, g = new THREE.BufferGeometry(), idx = [], gr = [];
     for (let j = 0; j < G - 1; j++) for (let i = 0; i < G - 1; i++) { const k = j * G + i; idx.push(k, k + G, k + 1, k + 1, k + G, k + G + 1); }
@@ -61,7 +59,6 @@ const nameplateDecals = [];
     const m = new THREE.Mesh(g, mat); m.renderOrder = -1; scene.add(m);
     if (d.mode === 'nameplate') nameplateDecals.push({ mat, center: new THREE.Vector3(...d.center), facing: new THREE.Vector3(...d.facing) });
   }
-  // back of the lid: the Copilot back photo, rectified, on an opaque quad just behind the screen
   if (W.lidBack) {
     const lt = await tl.loadAsync('assets/' + W.lidBack.tex);
     lt.colorSpace = THREE.NoColorSpace; lt.anisotropy = aniso;
@@ -80,28 +77,24 @@ scene.add(splat);
 const _np = new THREE.Vector3();
 function updateNameplates() {
   for (const n of nameplateDecals) {
-    const h = _np.subVectors(camera.position, n.center).projectOnPlane(upAxisRef()).normalize();
-    const d = h.dot(n.facing); // 1 = in front, -1 = behind
+    const h = _np.subVectors(camera.position, n.center).projectOnPlane(upAxis).normalize();
+    const d = h.dot(n.facing);
     n.mat.uniforms.uBack.value = 1 - THREE.MathUtils.smoothstep(d, -0.35, 0.05);
   }
 }
 
-// ---------- orbit rig (around the desk, axis = desk normal) ----------
 const V = (a) => new THREE.Vector3(...a);
 const target = V(W.target);
 const upAxis = V(W.deskNormal).normalize();
-const upAxisRef = () => upAxis;
-const fwd0 = V(W.front.fwd).normalize();
 const camUp0 = V(W.front.up).normalize();
-// Front pose in orbit terms
 const off0 = V(W.front.pos).sub(target);
 const R0 = off0.length();
 const ref = new THREE.Vector3().copy(off0).projectOnPlane(upAxis).normalize(); // yaw 0 direction
 const side = new THREE.Vector3().crossVectors(upAxis, ref).normalize();
 const tilt0 = off0.angleTo(upAxis); // angle from the desk normal
-const L = W.limits; // { tiltMin, tiltMax, yawMax (deg, 180 = full turn), zoomMin, zoomMax }
-const state = { yaw: 0, tilt: tilt0, zoom: 1, vy: 0, vt: 0 };
-const goal = { yaw: 0, tilt: tilt0, zoom: 1 };
+const L = W.limits;
+const state = { yaw: 0, tilt: tilt0, zoom: 1 };
+const goal = { ...state };
 const D2R = Math.PI / 180;
 const clampGoal = () => {
   if (L.yawMax < 180) goal.yaw = Math.max(-L.yawMax * D2R, Math.min(L.yawMax * D2R, goal.yaw));
@@ -133,6 +126,7 @@ function resize() {
     camera.fov = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect * 0.95) / D2R;
   }
   camera.updateProjectionMatrix();
+  dirty = true;
 }
 addEventListener('resize', resize); resize();
 function reduceResolution() {
@@ -145,7 +139,6 @@ function reduceResolution() {
   return true;
 }
 
-// ---------- hotspots: surface patches drawn on top, hidden when occluded ----------
 const vert = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
 const frag = `uniform float uHi; uniform float uAspect; varying vec2 vUv;
 void main(){
@@ -175,7 +168,6 @@ for (const [id, o] of Object.entries(W.objects)) {
   const mesh = new THREE.Mesh(g, m); mesh.renderOrder = 10; mesh.userData.id = id; scene.add(mesh);
   const c = g.boundingSphere.center.clone();
   const nrm = V(W.plane.normal).normalize();
-  // facing: horizontal direction from the object toward the front camera; from behind (> ~95 deg around) the hotspot is off
   const facing = V(W.front.pos).sub(c).projectOnPlane(V(W.deskNormal).normalize()).normalize();
   objects[id] = { id, mesh, center: c, normal: nrm, facing, hi: 0, want: 0, visible: true, el: nav.querySelector(`[data-id="${id}"]`) };
 }
@@ -222,26 +214,25 @@ function updateVisibility(now, force) {
     visibilityCamera.copy(camera.position);
     lastViewChange = now;
   }
-  // Full-splat CPU scans are expensive: cache stationary views and spread checks
-  // across frames after orbit settles, never nine scans in one animation frame.
+  // Cache expensive scans; do at most one per frame after orbit settles.
   let canRaycast = splatReady && !drag && now - lastViewChange >= 120;
   for (const o of Object.values(objects)) {
     const toCam = tmp.subVectors(camera.position, o.center);
     const dist = toCam.length(); toCam.divideScalar(dist);
     let vis = toCam.dot(o.normal) > 0.12; // seen from above, not edge-on or from under the desk
-    if (vis && UPRIGHT.has(o.id)) { const h = tmp2.copy(toCam).projectOnPlane(upAxis); if (h.lengthSq() > 1e-6 && h.normalize().dot(o.facing) < -0.25) vis = false; } // behind an upright object (lid, nameplates; the stickers sit under the lid); flat things rely on the occlusion ray
+    if (vis && UPRIGHT.has(o.id)) { const h = tmp2.copy(toCam).projectOnPlane(upAxis); if (h.lengthSq() > 1e-6 && h.normalize().dot(o.facing) < -0.25) vis = false; }
     if (vis && splatReady) {
       if (occlusionCurrent(o)) vis = !o.occluded;
       else if (canRaycast) { vis = !isOccluded(o); canRaycast = false; }
     }
+    if (o.visible !== vis) dirty = true;
     o.visible = vis; o.mesh.visible = vis || o.hi > 0.01;
     if (!vis && hover === o) setHover(null);
   }
 }
 
-// ---------- input ----------
 const pointer = new THREE.Vector2(), pick = new THREE.Raycaster();
-let hover = null, drag = null, splatReady = false, interacted = false, suppressClick = 0;
+let hover = null, drag = null, splatReady = false;
 function pickAt(x, y) {
   pointer.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
   pick.setFromCamera(pointer, camera);
@@ -274,18 +265,12 @@ function activate(o) {
   if (el.dataset.dialog) document.getElementById('dialog-' + el.dataset.dialog).showModal();
   else el.click();
 }
-const pointers = new Map();
+const pointers = new Set();
 canvas.addEventListener('pointerdown', (e) => {
-  canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  interacted = true;
-  if (pointers.size === 1) drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: 0 };
-  else if (pointers.size === 2) { const [a, b] = [...pointers.values()]; drag = { pinch: Math.hypot(a.x - b.x, a.y - b.y), zoom: goal.zoom, moved: 99 }; }
+  canvas.setPointerCapture(e.pointerId); pointers.add(e.pointerId);
+  drag = pointers.size === 1 ? { x: e.clientX, y: e.clientY, moved: 0 } : null;
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (drag && pointers.size === 2 && drag.pinch) {
-    const [a, b] = [...pointers.values()]; goal.zoom = drag.zoom * drag.pinch / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)); clampGoal(); return;
-  }
   if (drag && pointers.size === 1) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
     drag.moved += Math.abs(dx) + Math.abs(dy);
@@ -311,13 +296,13 @@ const end = (e) => {
         if (e.pointerType !== 'mouse') { setHover(o); tipAtObject(o); }
         activate(o);
       } else setHover(null);
-    } else suppressClick = performance.now() + 250;
+    }
     drag = null;
   }
 };
 canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
 canvas.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !drag) setHover(null); });
-canvas.addEventListener('wheel', (e) => { e.preventDefault(); interacted = true; goal.zoom *= Math.exp(e.deltaY * 0.0012); clampGoal(); }, { passive: false });
+canvas.addEventListener('wheel', (e) => { e.preventDefault(); goal.zoom *= Math.exp(e.deltaY * 0.0012); clampGoal(); }, { passive: false });
 addEventListener('keydown', (e) => {
   const s = 0.12;
   if (document.querySelector('dialog[open]')) return;
@@ -325,7 +310,7 @@ addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowUp') goal.tilt -= s * 0.6; else if (e.key === 'ArrowDown') goal.tilt += s * 0.6;
   else if (e.key === 'Home' || e.key === '0') { goal.yaw = Math.round(goal.yaw / (2 * Math.PI)) * 2 * Math.PI; goal.tilt = tilt0; goal.zoom = 1; }
   else return;
-  interacted = true; clampGoal();
+  clampGoal();
 });
 for (const o of Object.values(objects)) if (o.el) {
   o.el.addEventListener('focus', () => { setHover(o); tipAtObject(o); });
@@ -341,23 +326,28 @@ for (const d of document.querySelectorAll('dialog')) {
   });
 }
 
-// ---------- loop ----------
 let last = performance.now();
 function frame(now) {
   try {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const k = 1 - Math.exp(-dt * 9);
-    state.yaw += (goal.yaw - state.yaw) * k; state.tilt += (goal.tilt - state.tilt) * k; state.zoom += (goal.zoom - state.zoom) * k;
-    place();
-    updatePortraitMask();
-    updateNameplates();
+    for (const key of ['yaw', 'tilt', 'zoom']) {
+      const next = Math.abs(goal[key] - state[key]) < 1e-7 ? goal[key] : state[key] + (goal[key] - state[key]) * k;
+      if (next !== state[key]) { state[key] = next; dirty = true; }
+    }
+    if (dirty) { place(); updatePortraitMask(); updateNameplates(); }
     updateVisibility(now);
     for (const o of Object.values(objects)) {
-      o.hi += ((o.want && o.visible ? 1 : 0) - o.hi) * (1 - Math.exp(-dt * 14));
-      o.mesh.material.uniforms.uHi.value = o.hi; o.mesh.visible = o.visible || o.hi > 0.01;
+      const target = o.want && o.visible ? 1 : 0;
+      const next = Math.abs(target - o.hi) < 0.001 ? target : o.hi + (target - o.hi) * (1 - Math.exp(-dt * 14));
+      if (next !== o.hi) { o.hi = next; o.mesh.material.uniforms.uHi.value = next; dirty = true; }
+      o.mesh.visible = o.visible || o.hi > 0.01;
     }
     if (hover && document.activeElement === hover.el) tipAtObject(hover);
-    renderer.render(scene, camera);
+    if (dirty) {
+      dirty = false;
+      renderer.render(scene, camera);
+    }
   } catch (error) {
     renderer.setAnimationLoop(null);
     onError(error);
@@ -367,22 +357,13 @@ place();
 await splat.initialized;
 splatReady = true; updateVisibility(performance.now(), true);
 requestAnimationFrame(() => requestAnimationFrame(() => { canvas.classList.add('is-ready'); document.documentElement.classList.add('is-ready'); }));
-let vnow = 0;
-let pending = [];
-if (q.has('capture')) {
-  vnow = performance.now();
-  renderer.setAnimationLoop(() => { const r = pending.shift(); if (r) { vnow += r.ms; frame(vnow); r.done(); } });
-} else renderer.setAnimationLoop(frame);
+renderer.setAnimationLoop(frame);
 
-// test / capture hooks
+// Diagnostics used by the headed-browser regression harness.
 window.__desk = {
   state, goal, objects, camera, splat,
   ready: () => splatReady,
-  step: (ms = 1000 / 30) => new Promise((done) => pending.push({ ms, done })),
-  set: (yawDeg, tiltDeg, zoom = 1, snap = false) => { goal.yaw = yawDeg * D2R; goal.tilt = tiltDeg * D2R; goal.zoom = zoom; clampGoal(); if (snap) Object.assign(state, goal); },
-  tilt0: tilt0 / D2R,
   screenOf: (id) => { const p = objects[id].center.clone().project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight, visible: objects[id].visible }; },
-  visibleIds: () => Object.values(objects).filter((o) => o.visible).map((o) => o.id),
 };
 return { reduceResolution, pixelRatio: () => renderer.getPixelRatio() };
 }

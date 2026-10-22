@@ -3,7 +3,7 @@
 Static desk landing page for GitHub Pages, with a Reveal.js deck viewer when a
 deck is supplied. The laptop opens both demo recordings and skill links; the
 ideas note opens the about panel and README. Other desk objects link directly
-to the repository, slides folder, speakers, playlist, and Procore.
+to the repository, slides folder, speakers, GitHub September updates video, and Procore.
 The GitHub sticker intentionally remains a marked `#survey` placeholder.
 
 ## Build locally
@@ -39,6 +39,8 @@ four visible seconds, sustained rendering below 45 fps lowers pixel ratio by
 the console; the latest sample is available as `window.__desk.performance`.
 Exact hotspot occlusion scans are cached by camera position and spread across
 frames after orbit settles; taps still check occlusion before opening links.
+Idle views skip GPU redraws; camera, highlights, resize, and Spark sort updates
+trigger rendering without lowering resolution.
 
 Reduced motion, unavailable WebGL2, software renderers (SwiftShader, llvmpipe,
 softpipe, lavapipe, Basic Render), major performance caveats, initialization
