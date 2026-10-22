@@ -1,3 +1,5 @@
+import { createFrameMonitor } from "./performance.js";
+
 const fallback = (reason, error) => {
   console.warn(`Desk: ${reason}; using the flat version.`, error ?? "");
   location.replace(new URL("flat/", location.href));
@@ -49,24 +51,27 @@ if (reducedMotion && !force3D) {
     });
     try {
       const { startDesk } = await import("./app.js");
-      await startDesk(context, (error) => fallback("rendering failed", error));
+      const desk = await startDesk(context, (error) => fallback("rendering failed", error));
       if (!finished) {
         finished = true;
         clearTimeout(timer);
       }
-      if (!force3D && !new URLSearchParams(location.search).has("capture")) {
-        // Allow shader compilation to settle before measuring sustained frame time.
-        let previous = performance.now(), frames = 0, elapsed = 0, warmup = 90;
+      if (!new URLSearchParams(location.search).has("capture")) {
+        const monitor = createFrameMonitor({
+          pixelRatio: desk.pixelRatio,
+          reduceResolution: desk.reduceResolution,
+          onSample: (sample) => {
+            window.__desk.performance = sample;
+            if (sample.reduced) console.info("Desk: lowering rendering resolution.", sample);
+          },
+          onFallback: (fps) => {
+            if (!force3D) fallback(`sustained ${fps.toFixed(1)} fps at minimum pixel ratio ${desk.pixelRatio().toFixed(2)}`);
+          },
+        });
+        document.addEventListener("visibilitychange", monitor.reset);
         const measure = (now) => {
-          const delta = now - previous;
-          previous = now;
-          if (!document.hidden) {
-            if (warmup > 0) warmup--;
-            else { frames++; elapsed += delta; }
-          }
-          if (elapsed >= 4000) {
-            if (frames / elapsed * 1000 < 18) fallback("sustained rendering below 18 fps");
-          } else requestAnimationFrame(measure);
+          monitor.sample(now, !document.hidden);
+          requestAnimationFrame(measure);
         };
         requestAnimationFrame(measure);
       }
