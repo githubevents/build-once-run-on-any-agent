@@ -21,7 +21,8 @@ const renderer = new THREE.WebGLRenderer({ canvas, context, antialias: false, po
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xd9cdbd);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.02, 60);
-const spark = new SparkRenderer({ renderer, onDirty: () => { dirty = true; } });
+// Keep stationary splats stable when the camera-relative accumulator is rebuilt.
+const spark = new SparkRenderer({ renderer, accumExtSplats: true, onDirty: () => { dirty = true; } });
 scene.add(spark);
 
 // Printed details use the supplied photo, with splats still occluding them.
@@ -210,7 +211,7 @@ function isOccluded(o) {
   return o.occluded;
 }
 function updateVisibility(now, force) {
-  if (force || visibilityCamera.distanceToSquared(camera.position) > 1e-8) {
+  if (force || !visibilityCamera.equals(camera.position)) {
     visibilityCamera.copy(camera.position);
     lastViewChange = now;
   }
