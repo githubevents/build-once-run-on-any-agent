@@ -11,10 +11,5 @@
   },
   "dependencies": {
     "reveal.js": "6.0.2"
-  },
-  "devDependencies": {
-    "@sparkjsdev/spark": "2.4.0",
-    "esbuild": "0.28.2",
-    "three": "0.180.0"
   }
 }

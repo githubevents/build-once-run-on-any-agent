@@ -11,24 +11,42 @@
 <body>
   <main class="stage" id="stage">
     <h1 class="sr-only">Build once, run on any agent: a practical guide to agent skills</h1>
-    <canvas id="scene" aria-hidden="true"></canvas>
-    <div class="loading" aria-hidden="true"></div>
-    <div class="tip" id="tip" aria-hidden="true"></div>
-    <nav id="objects" aria-label="Desk">
-      <button data-id="laptop" data-dialog="demos" aria-haspopup="dialog">Laptop: open the demos</button>
-      <button data-id="ideas" data-dialog="about" aria-haspopup="dialog">Ideas note: what this is</button>
-      <a data-id="slides" href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/slides" target="_blank" rel="noopener">Slides note: open the slides folder on GitHub</a>
-      <a data-id="code" href="https://github.com/githubevents/build-once-run-on-any-agent" target="_blank" rel="noopener">Paper stack: open the code on GitHub</a>
-      <a data-id="phone" href="https://www.youtube.com/watch?v=ZQ0Qq6LlAmI" target="_blank" rel="noopener">Phone: watch GitHub September updates on YouTube</a>
-      <a data-id="andrea" href="https://x.com/acolombiadev" target="_blank" rel="noopener">Andrea Griffiths on X</a>
-      <a data-id="shishir" href="https://www.linkedin.com/in/shishir-tewari-36113514/" target="_blank" rel="noopener">Shishir Tewari on LinkedIn</a>
-      <a data-id="procore" href="https://www.procore.com/" target="_blank" rel="noopener">Procore website</a>
-      <a data-id="github" href="https://gh.io/sessionsurvey" target="_blank" rel="noopener">GitHub sticker: take the session survey</a>
-    </nav>
+    <div class="desk">
+      <img class="desk-photo" src="assets/decal.jpg" width="1280" height="720" draggable="false" fetchpriority="high" alt="A developer's desk with a laptop, sticky-note notebook, code papers, phone, two nameplates and stickers.">
+      <svg id="objects" viewBox="0 0 1280 720" role="navigation" aria-label="Desk">
+        <a class="spot" data-id="laptop" href="#dialog-demos" data-dialog="demos" aria-haspopup="dialog" aria-label="Laptop: open the demos">
+          <title>Demos</title><polygon points="376,65 855,14 875,313 988,502 489,596 418,390"/>
+        </a>
+        <a class="spot" data-id="ideas" href="#dialog-about" data-dialog="about" aria-haspopup="dialog" aria-label="Ideas note: what this is">
+          <title>What this is</title><polygon points="104,334 200,309 225,375 125,401"/>
+        </a>
+        <a class="spot" data-id="slides" href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/slides" target="_blank" rel="noopener" aria-label="Slides note: open the slides folder on GitHub">
+          <title>Slides</title><polygon points="194,420 280,399 307,461 215,486"/>
+        </a>
+        <a class="spot" data-id="code" href="https://github.com/githubevents/build-once-run-on-any-agent" target="_blank" rel="noopener" aria-label="Paper stack: open the code on GitHub">
+          <title>The code</title><polygon points="52,575 402,495 478,685 357,720 92,720"/>
+        </a>
+        <a class="spot" data-id="phone" href="https://www.youtube.com/watch?v=ZQ0Qq6LlAmI" target="_blank" rel="noopener" aria-label="Phone: watch GitHub September updates on YouTube">
+          <title>GitHub September updates</title><polygon points="993,402 1091,386 1194,565 1086,593"/>
+        </a>
+        <a class="spot" data-id="andrea" href="https://x.com/acolombiadev" target="_blank" rel="noopener" aria-label="Andrea Griffiths on X">
+          <title>Andrea on X</title><polygon points="554,605 758,565 781,629 574,675"/>
+        </a>
+        <a class="spot" data-id="shishir" href="https://www.linkedin.com/in/shishir-tewari-36113514/" target="_blank" rel="noopener" aria-label="Shishir Tewari on LinkedIn">
+          <title>Shishir on LinkedIn</title><polygon points="787,560 979,522 1002,580 810,624"/>
+        </a>
+        <a class="spot" data-id="procore" href="https://www.procore.com/" target="_blank" rel="noopener" aria-label="Procore website">
+          <title>Procore</title><polygon points="852,465 934,452 941,477 858,492"/>
+        </a>
+        <a class="spot" data-id="github" href="https://gh.io/sessionsurvey" target="_blank" rel="noopener" aria-label="GitHub sticker: take the session survey">
+          <title>Survey</title><circle cx="567" cy="530" r="23"/>
+        </a>
+      </svg>
+    </div>
   </main>
 
   <dialog class="panel" id="dialog-demos" aria-labelledby="demos-title">
-    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <a href="#stage" class="close" data-close aria-label="Close">×</a>
     <h2 id="demos-title">Demos</h2>
     <article>
       <h3>Proof Agent</h3>
@@ -57,7 +75,7 @@
   </dialog>
 
   <dialog class="panel" id="dialog-about" aria-labelledby="about-title">
-    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <a href="#stage" class="close" data-close aria-label="Close">×</a>
     <a href="https://github.com/githubevents/build-once-run-on-any-agent/blob/main/README.md"><h2 id="about-title">Build once, run on any agent</h2></a>
     <p>Most developers use AI the same way: open a chat, type a prompt, move on. The context disappears. The next step starts from scratch. Agent skills fix that. Andrea Griffiths builds them for her own recurring work: files any coding agent can run. Shishir Tewari builds them for a data engineering team at Procore, where a skill has to encode senior-engineer judgment and survive production. Different scale, same format. The file you write for yourself tonight is the same file that runs a team’s pipeline.</p>
     <p>You will leave with a clear model for when to build a skill instead of writing another prompt.</p>
@@ -70,7 +88,9 @@
     </dl>
   </dialog>
 
-  <noscript><meta http-equiv="refresh" content="0; url=flat/"></noscript>
-  <script type="module" src="app.js"></script>
+  <noscript><style>
+    dialog:target { display: block; position: fixed; inset: 0; margin: auto; z-index: 10; overflow: auto; }
+  </style></noscript>
+  <script src="app.js" defer></script>
 </body>
 </html>
