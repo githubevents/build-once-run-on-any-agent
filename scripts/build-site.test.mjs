@@ -72,12 +72,12 @@ test("no-deck build includes public assets only and clears stale slides", async 
       "https://x.com/acolombiadev",
       "https://www.linkedin.com/in/shishir-tewari-36113514/",
       "https://www.procore.com/",
+      "https://gh.io/sessionsurvey",
       "https://github.com/githubevents/build-once-run-on-any-agent/blob/main/README.md",
       "https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-agent",
       "https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-review",
       "https://github.com/githubevents/build-once-run-on-any-agent/blob/main/demos/dataforge/examples/support-desk/DEMO.md",
     ]) assert.ok(page.includes(`href="${url}"`), `Missing link ${url}`);
-    assert.match(page, /href="#survey"[^>]*data-placeholder="survey"|data-placeholder="survey"[^>]*href="#survey"/);
     assert.doesNotMatch(page, /(?:href|src)="\//);
     assert.doesNotMatch(page, /<!-- DECK_LINKS -->/);
     assert.equal((page.match(/<video /g) ?? []).length, 2);
