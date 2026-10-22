@@ -32,11 +32,18 @@ rather than backing into the generated room. The desk fills the width; a
 portrait-only fade follows its projected bounds to hide the surrounding
 panorama, floor, and duplicate desk. Touch tilt and zoom are locked to the
 original downward-facing pose; horizontal orbit remains unrestricted.
-Pixel ratio is capped at 2 and a 4.2-million-pixel canvas budget.
+Pixel ratio starts capped at 2 and a 4.2-million-pixel canvas budget. Every
+four visible seconds, sustained rendering below 45 fps lowers pixel ratio by
+25%, down to 0.75 (or the initial cap if lower), without replacing the clean
+500k scene. Startup and hidden-tab time are excluded. Changes are logged to
+the console; the latest sample is available as `window.__desk.performance`.
+Exact hotspot occlusion scans are cached by camera position and spread across
+frames after orbit settles; taps still check occlusion before opening links.
 
 Reduced motion, unavailable WebGL2, software renderers (SwiftShader, llvmpipe,
 softpipe, lavapipe, Basic Render), major performance caveats, initialization
-failures/timeouts, lost contexts, and sustained rendering below 18 fps select
+failures/timeouts, lost contexts, or two consecutive four-second windows below
+10 fps after reaching minimum resolution select
 `flat/`. Screen size, touch input, memory/core counts, and connection type do not
 select the fallback. The flat page fits the whole desk and keeps all nine
 hotspots and both panels, including when JavaScript is disabled. Its "Try 3D"

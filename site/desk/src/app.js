@@ -11,6 +11,7 @@ const tip = document.getElementById('tip');
 const nav = document.getElementById('objects');
 const touch = matchMedia('(pointer: coarse)').matches;
 const q = new URLSearchParams(location.search);
+let resolutionLimit = Infinity;
 
 const W = await fetch('assets/world.json').then((r) => {
   if (!r.ok) throw new Error(`World configuration: HTTP ${r.status}`);
@@ -122,7 +123,7 @@ function place() {
 // Widen the portrait lens without moving the camera outside the captured room.
 function resize() {
   const w = innerWidth, h = innerHeight;
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2, Math.sqrt(4.2e6 / (w * h))));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2, Math.sqrt(4.2e6 / (w * h)), resolutionLimit));
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   const hf = W.front.hfov * D2R;
@@ -134,6 +135,15 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
+function reduceResolution() {
+  const current = renderer.getPixelRatio();
+  const minimum = Math.min(devicePixelRatio, 0.75, Math.sqrt(4.2e6 / (innerWidth * innerHeight)));
+  const next = Math.max(minimum, current * 0.75);
+  if (next >= current - 0.01) return false;
+  resolutionLimit = next;
+  resize();
+  return true;
+}
 
 // ---------- hotspots: surface patches drawn on top, hidden when occluded ----------
 const vert = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
@@ -189,20 +199,40 @@ function updatePortraitMask() {
 // Occlusion: a hotspot shows only if its centre faces the camera and the splats don't cover it.
 const occRay = new THREE.Raycaster();
 const UPRIGHT = new Set(['laptop', 'andrea', 'shishir', 'procore', 'github']);
-let lastOcc = 0;
+const visibilityCamera = new THREE.Vector3(Infinity, Infinity, Infinity);
+let lastViewChange = 0;
+function occlusionCurrent(o) {
+  return o.occlusionCamera?.distanceToSquared(camera.position) < 1e-8;
+}
+function isOccluded(o) {
+  if (!splatReady) return false;
+  if (occlusionCurrent(o)) return o.occluded;
+  const dist = camera.position.distanceTo(o.center);
+  occRay.set(camera.position, tmp2.copy(o.center).sub(camera.position).normalize());
+  occRay.far = dist;
+  const hits = [];
+  splat.raycast(occRay, hits);
+  o.occluded = hits.some((hit) => hit.distance < dist * 0.9 - 0.02);
+  o.occlusionCamera ??= new THREE.Vector3();
+  o.occlusionCamera.copy(camera.position);
+  return o.occluded;
+}
 function updateVisibility(now, force) {
-  if (!force && now - lastOcc < 120) return; lastOcc = now;
+  if (force || visibilityCamera.distanceToSquared(camera.position) > 1e-8) {
+    visibilityCamera.copy(camera.position);
+    lastViewChange = now;
+  }
+  // Full-splat CPU scans are expensive: cache stationary views and spread checks
+  // across frames after orbit settles, never nine scans in one animation frame.
+  let canRaycast = splatReady && !drag && now - lastViewChange >= 120;
   for (const o of Object.values(objects)) {
     const toCam = tmp.subVectors(camera.position, o.center);
     const dist = toCam.length(); toCam.divideScalar(dist);
     let vis = toCam.dot(o.normal) > 0.12; // seen from above, not edge-on or from under the desk
     if (vis && UPRIGHT.has(o.id)) { const h = tmp2.copy(toCam).projectOnPlane(upAxis); if (h.lengthSq() > 1e-6 && h.normalize().dot(o.facing) < -0.25) vis = false; } // behind an upright object (lid, nameplates; the stickers sit under the lid); flat things rely on the occlusion ray
     if (vis && splatReady) {
-      occRay.set(camera.position, tmp2.copy(o.center).sub(camera.position).normalize());
-      occRay.far = dist; const hits = [];
-      splat.raycast(occRay, hits);
-      const near = hits.length ? Math.min(...hits.map((h) => h.distance)) : Infinity;
-      if (near < dist * 0.9 - 0.02) vis = false;
+      if (occlusionCurrent(o)) vis = !o.occluded;
+      else if (canRaycast) { vis = !isOccluded(o); canRaycast = false; }
     }
     o.visible = vis; o.mesh.visible = vis || o.hi > 0.01;
     if (!vis && hover === o) setHover(null);
@@ -219,7 +249,12 @@ function pickAt(x, y) {
   if (!hits.length) return null;
   // smallest patch wins when they overlap (stickers on the laptop)
   hits.sort((a, b) => a.object.geometry.boundingSphere.radius - b.object.geometry.boundingSphere.radius);
-  return objects[hits[0].object.userData.id];
+  // A tap/hover must still respect exact occlusion while background checks wait.
+  for (const hit of hits) {
+    const o = objects[hit.object.userData.id];
+    if (!isOccluded(o)) return o;
+  }
+  return null;
 }
 function setHover(o, x, y) {
   if (hover && hover !== o) hover.want = 0;
@@ -349,4 +384,5 @@ window.__desk = {
   screenOf: (id) => { const p = objects[id].center.clone().project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight, visible: objects[id].visible }; },
   visibleIds: () => Object.values(objects).filter((o) => o.visible).map((o) => o.id),
 };
+return { reduceResolution, pixelRatio: () => renderer.getPixelRatio() };
 }
