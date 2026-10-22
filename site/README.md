@@ -58,9 +58,10 @@ Missing WebGL2 and scene/context failures still fall back safely, even when forc
 The flat page fits the whole desk and keeps all nine hotspots and both panels,
 including when JavaScript is disabled.
 
-The original `decal-mask.png`, `decal-mask-screen.png`, and `decal-mask-base.png`
-in `assets/` are used exactly as referenced by the supplied source and world
-configuration. The scene, camera, and hotspot coordinates are unchanged.
+`decal-mask.png`, `decal-mask-screen.png`, and `decal-mask-base.png` in
+`assets/` keep the supplied shapes and file names, with edges smoothed so the
+shader's 0.5 cutoff follows sub-pixel contours instead of the 1280×720 pixel
+staircase. The scene, camera, and hotspot coordinates are unchanged.
 
 ## Add the deck
 
