@@ -29,9 +29,10 @@ around the original pose, avoiding the generated scene's distorted side views.
 Touch tilt and zoom stay locked to the original downward-facing pose.
 Phones and tablets use 3D by default. The fixed, edge-to-edge canvas follows its
 container through a ResizeObserver; picking uses the same canvas bounds.
-Portrait uses a 36-degree vertical-FOV cover crop instead of shrinking the
-whole desk into a masked strip. Peripheral objects can be cropped; desktop's
-initial framing is unchanged. Drag horizontally or tap a visible hotspot.
+Portrait uses a 92-degree vertical FOV to keep the laptop, both nameplates and
+all hotspots inside the front arc with a margin. It prioritizes access to every
+hotspot over hiding the generated surroundings; desktop's initial framing is
+unchanged. Drag horizontally or tap a visible hotspot.
 Pixel ratio starts between 1 and 2 with a 4.2-million-pixel budget (except when
 even DPR 1 exceeds that budget). Every
 four visible seconds, sustained rendering below 45 fps lowers pixel ratio by
