@@ -12,17 +12,25 @@ body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); ba
 .desk {
   position: absolute; left: 50%; top: 50%;
   width: max(100%, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9;
-  transform: translate(-50%, -50%);
+  --rx: 0deg; --ry: 0deg; --tx: 0px; --ty: 0px;
+  /* scale(1.03) keeps ±3deg / ±8px of tilt from exposing the stage edges. */
+  transform: translate(-50%, -50%) perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(1.03);
+  transition: transform .18s var(--ease);
 }
 .desk-photo { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
 #objects { position: absolute; inset: 0; width: 100%; height: 100%; }
-.spot { fill: transparent; stroke: transparent; stroke-width: 36; cursor: pointer; }
-.spot:hover, .spot:focus-visible { fill: rgb(255 255 255 / .08); outline: none; }
+.spot {
+  fill: transparent; stroke: transparent; stroke-width: 36; cursor: pointer;
+  transition: fill .18s var(--ease), stroke .18s var(--ease), filter .18s var(--ease);
+}
+.spot:hover, .spot:focus-visible { fill: rgb(255 214 160 / .14); filter: drop-shadow(0 0 12px rgb(255 190 120 / .35)); outline: none; }
 .spot:focus-visible { stroke: #fff; stroke-width: 2; }
 @media (orientation: portrait) {
   /* Keep photo x=50..1194 visible with 12px margins. */
-  .desk { width: calc((100% - 24px) * 1280 / 1144); transform: translate(-48.6%, -50%); }
+  .desk { width: calc((100% - 24px) * 1280 / 1144); transform: translate(-48.6%, -50%) perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(1.03); }
 }
+@media (prefers-reduced-motion: reduce) { .desk { transform: translate(-50%, -50%); transition: none; } }
+@media (prefers-reduced-motion: reduce) and (orientation: portrait) { .desk { transform: translate(-48.6%, -50%); } }
 
 /* Panels */
 .panel {
