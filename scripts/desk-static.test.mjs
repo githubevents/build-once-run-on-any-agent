@@ -5,7 +5,7 @@ import { runInNewContext } from "node:vm";
 
 const source = await readFile(new URL("../site/desk/app.js", import.meta.url), "utf8");
 
-function setup() {
+function setup({ reducedMotion = false } = {}) {
   const panels = Object.fromEntries(["demos", "about"].map((id) => {
     const dialog = new EventTarget();
     dialog.open = false;
@@ -16,17 +16,24 @@ function setup() {
     return [id, { dialog, link, close }];
   }));
   const entries = Object.values(panels);
+  const style = new Map();
+  const desk = { style: { setProperty: (name, value) => style.set(name, value) } };
+  const stage = Object.assign(new EventTarget(), {
+    querySelector: (selector) => (selector === ".desk" ? desk : null),
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 100 }),
+  });
   runInNewContext(source, {
+    matchMedia: () => ({ matches: reducedMotion }),
     document: {
       querySelectorAll: (selector) => ({
         "[data-dialog]": entries.map((panel) => panel.link),
         "[data-close]": entries.map((panel) => panel.close),
         dialog: entries.map((panel) => panel.dialog),
       })[selector],
-      getElementById: (id) => panels[id.replace("dialog-", "")].dialog,
+      getElementById: (id) => (id === "stage" ? stage : panels[id.replace("dialog-", "")].dialog),
     },
   });
-  return panels;
+  return Object.assign(panels, { stage, style });
 }
 
 function click(element) {
@@ -37,7 +44,7 @@ function click(element) {
 
 test("photo panel links open their own dialog without navigating", () => {
   const panels = setup();
-  for (const panel of Object.values(panels)) {
+  for (const panel of [panels.demos, panels.about]) {
     assert.equal(click(panel.link).defaultPrevented, true);
     assert.equal(panel.dialog.open, true);
     assert.equal(click(panel.close).defaultPrevented, true);
@@ -67,4 +74,33 @@ test("backdrop dismisses only when both press and release target the backdrop", 
   assert.equal(dialog.open, true);
   click(dialog);
   assert.equal(dialog.open, true);
+});
+
+function move(stage, clientX, clientY) {
+  stage.dispatchEvent(Object.assign(new Event("pointermove"), { clientX, clientY }));
+}
+
+const flat = { "--ry": "0deg", "--rx": "0deg", "--tx": "0px", "--ty": "0px" };
+
+test("pointer tilts the desk and pointerleave resets it", () => {
+  const { stage, style } = setup();
+  move(stage, 200, 0);
+  assert.deepEqual(Object.fromEntries(style), { "--ry": "2.5deg", "--rx": "2deg", "--tx": "-5px", "--ty": "4px" });
+  stage.dispatchEvent(new Event("pointerleave"));
+  assert.deepEqual(Object.fromEntries(style), flat);
+});
+
+test("opening a dialog resets the tilt and holds it flat", () => {
+  const { stage, style, demos } = setup();
+  move(stage, 0, 100);
+  click(demos.link);
+  assert.deepEqual(Object.fromEntries(style), flat);
+  move(stage, 200, 0);
+  assert.deepEqual(Object.fromEntries(style), flat);
+});
+
+test("reduced motion keeps the desk flat", () => {
+  const { stage, style } = setup({ reducedMotion: true });
+  move(stage, 200, 0);
+  assert.deepEqual(Object.fromEntries(style), flat);
 });
