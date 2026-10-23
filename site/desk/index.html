@@ -7,12 +7,19 @@
   <meta name="description" content="A practical guide to agent skills. Andrea Griffiths and Shishir Tewari at GitHub Universe 2026.">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+  </script>
 </head>
 <body>
   <main class="stage" id="stage">
     <h1 class="sr-only">Build once, run on any agent: a practical guide to agent skills</h1>
-    <div class="desk">
-      <img class="desk-photo" src="assets/decal.jpg" width="1280" height="720" draggable="false" fetchpriority="high" alt="A developer's desk with a laptop, sticky-note notebook, code papers, phone, two nameplates and stickers.">
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="hotspot-label" id="hotspot-label" aria-hidden="true" hidden></div>
+    <p class="hint" aria-hidden="true">Drag to look around. Select an object to open it.</p>
+    <button class="reset" id="reset-view" type="button" hidden>Reset view</button>
+    <div class="desk" data-alt="A developer's desk with a laptop, sticky-note notebook, code papers, phone, two nameplates and stickers.">
+      <noscript><img class="desk-photo" src="assets/decal.jpg" width="1280" height="720" draggable="false" alt="A developer's desk with a laptop, sticky-note notebook, code papers, phone, two nameplates and stickers."></noscript>
       <svg id="objects" viewBox="0 0 1280 720" role="navigation" aria-label="Desk">
         <a class="spot" data-id="laptop" href="#dialog-demos" data-dialog="demos" aria-haspopup="dialog" aria-label="Laptop: open the demos">
           <title>Demos</title><polygon points="376,65 855,14 875,313 988,502 489,596 418,390"/>
@@ -95,5 +102,6 @@
     dialog:target { display: block; position: fixed; inset: 0; margin: auto; z-index: 10; overflow: auto; }
   </style></noscript>
   <script src="app.js" defer></script>
+  <script type="module" src="desk3d.js"></script>
 </body>
 </html>

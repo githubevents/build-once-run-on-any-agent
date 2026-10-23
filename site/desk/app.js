@@ -1,3 +1,16 @@
+// Without WebGL (or JavaScript), the desk falls back to the source photo with aligned SVG hotspots.
+window.deskFallback = () => {
+  const desk = document.querySelector('.desk');
+  if (!desk || desk.querySelector('img.desk-photo')) return;
+  const photo = document.createElement('img');
+  photo.className = 'desk-photo';
+  photo.src = 'assets/decal.jpg';
+  photo.width = 1280;
+  photo.height = 720;
+  photo.draggable = false;
+  photo.alt = desk.dataset.alt;
+  desk.prepend(photo);
+};
 document.querySelectorAll('[data-dialog]').forEach((link) => {
   link.addEventListener('click', (event) => {
     event.preventDefault();

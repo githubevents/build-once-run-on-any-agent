@@ -16,16 +16,27 @@ python3 -m http.server 8080 --directory dist
 
 Open `http://localhost:8080`. Requires Node.js 22 or later.
 
-The desk lives in `site/desk/`: the original sharp photo (`assets/decal.jpg`),
-aligned SVG hotspots, and a small script for the two panels. No 3D assets,
-renderer, or fallback are needed. Links and panels also work without JavaScript.
-All site URLs are relative so Pages project subpaths work; old `flat/` links
-redirect to the same desk.
+The desk lives in `site/desk/`. It is a Three.js scene built from real meshes,
+not a photo or Gaussian splat, so it stays sharp at every angle:
 
-Desktop and landscape cover the viewport without stretching the photo.
-Portrait fits every hotspot and both nameplates across the available width,
-preserving the photo's aspect ratio against the page background. Click, tap,
-or use Tab and Enter to open a hotspot.
+- `desk3d.js` sets up the renderer, `RoomEnvironment` lighting, soft shadows,
+  `OrbitControls`, aspect-aware camera framing, and hotspot picking.
+- `parts.js` builds each desk object from Three.js geometry.
+- `textures.js` and `screens.js` draw the high-DPI canvas textures: wood, the
+  laptop README screen, phone feed, nameplates, notes, and stickers.
+
+`three` is pinned in `package.json`. The build copies the files it needs into
+`dist/vendor/three/`, and an import map loads them, so there is no bundler or
+CDN. All site URLs are relative so Pages project subpaths work. Old `flat/`
+links redirect to the same desk.
+
+Drag to orbit, scroll or pinch to zoom, and use **Reset view** to return. The
+camera fits every object, from the notebook to the phone, at any aspect ratio.
+Click or tap an object to open it. The SVG hotspot links stay in the page as
+accessible controls: Tab or the arrow keys move focus and highlight the
+matching 3D object, and Enter opens it. Without WebGL, the page shows the
+original photo (`assets/decal.jpg`) with the same hotspots. Without JavaScript,
+the `<noscript>` photo is shown instead.
 
 ## Add the deck
 

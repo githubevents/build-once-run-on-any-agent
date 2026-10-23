@@ -24,6 +24,32 @@ body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); ba
   .desk { width: calc((100% - 24px) * 1280 / 1144); transform: translate(-48.6%, -50%); }
 }
 
+/* 3D desk */
+#scene { display: none; position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; outline: none; }
+.is-3d #scene { display: block; }
+.is-3d .desk { left: 0; top: 0; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); transform: none; }
+.hotspot-label {
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none;
+  padding: 6px 12px; margin-top: -10px; border-radius: 999px;
+  background: rgb(22 22 29 / .86); color: #fff; font-size: 14px; font-weight: 500; white-space: nowrap;
+  box-shadow: 0 6px 20px -6px rgb(0 0 0 / .45);
+}
+.hint, .reset { display: none; }
+.is-3d .hint {
+  display: block; position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); margin: 0;
+  transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; pointer-events: none;
+  background: rgb(251 250 247 / .78); color: var(--muted); font-size: 13px; white-space: nowrap;
+  animation: hint 6s 2s var(--ease) forwards;
+}
+@keyframes hint { to { opacity: 0; visibility: hidden; } }
+.is-3d .reset:not([hidden]) {
+  display: block; position: absolute; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom));
+  padding: 8px 16px; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgb(251 250 247 / .92); color: var(--ink); font: 500 14px/1.2 "Inter", system-ui, sans-serif;
+  box-shadow: 0 6px 20px -8px rgb(0 0 0 / .4);
+}
+@media (prefers-reduced-motion: reduce) { .is-3d .hint { animation: none; opacity: 1; } }
+
 /* Panels */
 .panel {
   width: min(560px, calc(100vw - 32px));

@@ -10,6 +10,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "reveal.js": "6.0.2"
+    "reveal.js": "6.0.2",
+    "three": "0.186.1"
   }
 }

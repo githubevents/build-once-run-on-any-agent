@@ -7,6 +7,14 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const recordings = ["proof-agent-narrated.mp4", "Dataforge.mp4"];
+export const deskFiles = ["index.html", "styles.css", "app.js", "desk3d.js", "parts.js", "textures.js", "screens.js", "assets"];
+export const threeFiles = [
+  "build/three.module.js",
+  "build/three.core.js",
+  "examples/jsm/controls/OrbitControls.js",
+  "examples/jsm/environments/RoomEnvironment.js",
+  "examples/jsm/geometries/RoundedBoxGeometry.js",
+];
 
 export function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (char) => ({
@@ -38,8 +46,14 @@ export async function buildSite({ source = root, output = path.join(root, "dist"
     for (const file of ["theme.css", "site.css", "proof-agent.jpg", "dataforge.jpg"]) {
       await cp(path.join(source, "site", file), path.join(output, file));
     }
-    for (const file of ["index.html", "styles.css", "app.js", "assets"]) {
+    for (const file of deskFiles) {
       await cp(path.join(source, "site/desk", file), path.join(output, file), { recursive: true });
+    }
+    const three = path.join(root, "node_modules/three");
+    for (const file of [...threeFiles, "LICENSE"]) {
+      const target = file.replace(/^build\//, "").replace(/^examples\/jsm\//, "addons/");
+      await mkdir(path.dirname(path.join(output, "vendor/three", target)), { recursive: true });
+      await cp(path.join(three, file), path.join(output, "vendor/three", target));
     }
     await mkdir(path.join(output, "assets/recordings"), { recursive: true });
     for (const file of recordings) {

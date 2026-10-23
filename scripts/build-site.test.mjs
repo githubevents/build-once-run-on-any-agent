@@ -57,7 +57,17 @@ test("no-deck build includes public assets only and clears stale slides", async 
   assert.deepEqual(await readFile(path.join(output, "assets/decal.jpg")),
     await readFile(path.join(source, "site/desk/assets/decal.jpg")));
   assert.match(html, /<img [^>]*src="assets\/decal.jpg"[^>]*width="1280" height="720"/);
-  assert.doesNotMatch(html, /<canvas|type="module"|Try 3D/);
+  assert.match(html, /<noscript><img [^>]*src="assets\/decal.jpg"/);
+  assert.match(html, /<canvas id="scene" aria-hidden="true">/);
+  assert.match(html, /<script type="module" src="desk3d.js">/);
+  const importmap = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(importmap.imports, { three: "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" });
+  for (const file of ["desk3d.js", "parts.js", "textures.js", "screens.js"]) assert.ok(files.includes(file), `Missing ${file}`);
+  for (const file of ["three.module.js", "three.core.js", "LICENSE", "addons/controls/OrbitControls.js",
+    "addons/environments/RoomEnvironment.js", "addons/geometries/RoundedBoxGeometry.js"]) {
+    await readFile(path.join(output, "vendor/three", file));
+  }
+  assert.doesNotMatch(html, /spark|\.spz/i);
   assert.deepEqual([...html.matchAll(/data-id="([^"]+)"/g)].map((match) => match[1]),
     ["laptop", "ideas", "slides", "code", "phone", "headphones", "andrea", "shishir", "procore", "github"]);
   for (const panel of ["demos", "about"]) {
