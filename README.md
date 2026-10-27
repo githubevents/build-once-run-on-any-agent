@@ -41,3 +41,9 @@ For more of Andrea's skills and resources, see [mainbranch.dev/skills](https://m
 | [`demos/`](demos/) | The skills above, as runnable snapshots |
 | [`assets/`](assets/) | Recordings used by the demos and the site |
 | [`site/`](site/) | Talk website source and build ([build, deck, and Pages setup](site/README.md)) |
+
+## License
+
+- **Code** (site, scripts): [MIT](LICENSE)
+- **Slides, recordings, and written content**: [CC BY 4.0](LICENSE-CONTENT). Reuse is welcome with credit to Andrea Griffiths and Shishir Tewari.
+- **Demos** keep their own licenses: [proof-agent](demos/proof-agent/LICENSE), [dataforge](demos/dataforge/LICENSE), [proof-review](demos/proof-review/LICENSE).
