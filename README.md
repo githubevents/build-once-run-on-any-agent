@@ -32,6 +32,7 @@ You will leave with a clear model for when to build a skill instead of writing a
 
 [**proof-review**](demos/proof-review/) is not part of the talk. It extends the verifier idea from proof-agent: proof-agent reviews the diff, proof-review reproduces a bugfix claim under production-shaped load and measures whether the PR closes every root cause. Canonical: [AndreaGriffiths11/proof-review](https://github.com/AndreaGriffiths11/proof-review).
 
+For more of Andrea's skills and resources, see [mainbranch.dev/skills](https://mainbranch.dev/skills/).
 ## Repository layout
 
 | Path | Contents |
