@@ -41,4 +41,3 @@ For more of Andrea's skills and resources, see [mainbranch.dev/skills](https://m
 | [`demos/`](demos/) | The skills above, as runnable snapshots |
 | [`assets/`](assets/) | Recordings used by the demos and the site |
 | [`site/`](site/) | Talk website source and build ([build, deck, and Pages setup](site/README.md)) |
-| `resources/` | Reserved for supporting links |
