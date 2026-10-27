@@ -28,12 +28,16 @@ You will leave with a clear model for when to build a skill instead of writing a
 | [**proof-agent**](demos/proof-agent/) | Andrea's independent verifier skill and GitHub Action, pinned to `v1.1.2` | [Narrated demo](assets/recordings/proof-agent-narrated.mp4) (3:52) | [AndreaGriffiths11/proof-agent](https://github.com/AndreaGriffiths11/proof-agent) |
 | [**dataforge**](demos/dataforge/) | Shishir's four agent skills that build data pipelines from a project manifest, issue to pull request | [Recording](assets/recordings/Dataforge.mp4) | [tewarishishir/dataforge](https://github.com/tewarishishir/dataforge) |
 
+## Also in this repo
+
+[**proof-review**](demos/proof-review/) is not part of the talk. It extends the verifier idea from proof-agent: proof-agent reviews the diff, proof-review reproduces a bugfix claim under production-shaped load and measures whether the PR closes every root cause. Canonical: [AndreaGriffiths11/proof-review](https://github.com/AndreaGriffiths11/proof-review).
+
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
 | [`slides/`](slides/) | The talk deck |
-| [`demos/`](demos/) | The three skills above, as runnable snapshots |
+| [`demos/`](demos/) | The skills above, as runnable snapshots |
 | [`assets/`](assets/) | Recordings used by the demos and the site |
 | [`site/`](site/) | Talk website source and build ([build, deck, and Pages setup](site/README.md)) |
 | `resources/` | Reserved for supporting links |
