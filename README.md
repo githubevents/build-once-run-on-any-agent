@@ -4,7 +4,7 @@
 
 **A practical guide to agent skills** · GitHub Universe 2026 · BLD1787B
 
-[Talk site](https://gh.io/skills26site) · [Slides (PDF)](slides/talk.pdf)
+[Talk site](https://gh.io/skills-talk) · [Slides (PDF)](slides/talk.pdf)
 
 | Speaker | Role |
 | --- | --- |
