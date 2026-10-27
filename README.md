@@ -1,5 +1,7 @@
 # Build once, run on any agent
 
+[![Build once, run on any agent — title slide](assets/cover.png)](slides/talk.pdf)
+
 **A practical guide to agent skills** · GitHub Universe 2026 · BLD1787B
 
 [Talk site](https://gh.io/skills26site) · [Slides (PDF)](slides/talk.pdf)
