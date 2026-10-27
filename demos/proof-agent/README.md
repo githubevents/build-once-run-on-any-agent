@@ -7,7 +7,7 @@
 > between syncs.
 
 Start with [SKILL.md](SKILL.md) for the independent verifier procedure.
-The [narrated demo](../../assets/recordings/proof-agent-narrated.mp4) (3:52)
+The [narrated demo](../../assets/recordings/proof-agent-narrated.mp4) (3:43)
 shows its GitHub Actions integration and a PR's correction history.
 
 This skill reviews diffs. The separate [proof-review](../proof-review/) skill
