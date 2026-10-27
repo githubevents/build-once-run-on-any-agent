@@ -24,4 +24,5 @@ You will leave with a clear model for when to build a skill instead of writing a
 - [`demos/`](demos/) — The three skills above, as runnable snapshots.
 - [`site/`](site/) — Talk website source and build. See [site/README.md](site/README.md) for build, deck, and Pages setup.
 - [`assets/`](assets/) — Recordings used by the demos and the site above.
-- `slides/`, `resources/` — Reserved for presentation materials and supporting links, added closer to the talk.
+- [`slides/`](slides/) — The talk deck ([PDF](slides/talk.pdf)).
+- `resources/` — Reserved for supporting links, added closer to the talk.
