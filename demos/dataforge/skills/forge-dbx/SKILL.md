@@ -1,0 +1,405 @@
+---
+name: forge-dbx
+description: >-
+  Data platform CLI orchestration driven by dataforge.manifest.yaml. Authenticate to
+  zones, discover and trigger jobs (schema changes, pipeline loads, ad-hoc scripts),
+  execute SQL, explore catalogs, and monitor runs. Supports Databricks and DuckDB
+  engines behind one interface. Reads all project-specific values
+  (zones, profiles, catalogs, job names) from the dataforge manifest so no hardcoded
+  business context is required. Works on both Unix/macOS (bash/zsh) and Windows
+  (PowerShell). Triggers on "forge-dbx", "databricks", "duckdb", "dbx", "run job",
+  "schema change", "trigger pipeline", "run SQL", "run query", "execute SQL",
+  "zone login", "dataforge/dbx", "query this table".
+metadata:
+  status: "beta"
+  agent-tools: [read, runCommands]
+  human-description: Runs data platform CLI operations for dataforge, authenticating to zones, triggering jobs, executing SQL, and browsing catalogs.
+---
+
+# forge-dbx
+
+Data platform CLI orchestration and data exploration for any dataforge project. All project-specific values (zones, profiles, catalogs, job names, file patterns) are read from the manifest -- never hardcoded.
+
+This is the execution primitive every other dataforge skill composes. No other skill calls a platform CLI directly.
+
+**Read on entry:** [reference.md](reference.md) -- anti-patterns, golden patterns, job parameter templates, CLI command catalog, troubleshooting table.
+
+## Step 0: Detect Shell
+
+Pick the correct syntax for the user's environment before executing any commands.
+
+| OS | Shell | Detection | Temp dir | JSON quoting |
+| :--- | :--- | :--- | :--- | :--- |
+| macOS / Linux | bash or zsh | Check `$SHELL` or `echo $0` | `/tmp` | Single quotes work inline |
+| Windows | PowerShell | Check `$PSVersionTable` | `$env:TEMP` | Must write to temp file (see reference.md) |
+
+Key syntax differences:
+
+| Concern | Bash/Zsh | PowerShell |
+| :--- | :--- | :--- |
+| Command chaining | `cmd1 && cmd2` | `cmd1; cmd2` (separate calls preferred) |
+| Heredoc | `cat > file <<'EOF' ... EOF` | `[System.IO.File]::WriteAllText()` |
+| JSON to CLI | `--json @file.json` | `--json "@file.json"` (quoted @) |
+| jq equivalent | `jq` (preinstalled) | `ConvertFrom-Json` pipeline |
+
+## Step 1: Read Manifest
+
+Read `../../assets/dataforge.manifest.resolved.yaml` (relative to this SKILL.md) to load project-specific configuration. If the resolved manifest does not exist, or if the seed `../../assets/dataforge.manifest.yaml` has a newer modification time, invoke [forge-init](../forge-init/SKILL.md) to regenerate it before proceeding. If the seed contains legacy full-manifest keys (e.g., `catalogs`, `domains`), read it directly as a pre-resolved manifest. Extract these sections:
+
+### Zones and Profiles
+
+From `platform.zones`: build a zone-profile lookup table. Every Databricks CLI command requires `--profile <profile>` -- derive the profile name from the manifest, never hardcode it.
+
+### Catalog Patterns
+
+From `catalogs.targets`: resolve catalog names by replacing `{zone_suffix}` with `_<zone_id>`. Check `catalogs.zone_exceptions` before applying the pattern -- exceptions use explicit per-zone values.
+
+### Job Names
+
+From `orchestration.jobs` (shared runners) and `orchestration.domain_jobs` (domain-specific pipelines). Job IDs differ per zone and must be discovered at runtime.
+
+### File Patterns
+
+From `orchestration.file_patterns`: used by the deploy skill and for validating file paths before job submission.
+
+STOP: Read the manifest and confirm zone, catalog, and job values before proceeding to any operation.
+
+## Step 1b: Select the Engine Adapter
+
+Read `platform.engine` from the resolved manifest. It selects which adapter executes every operation below.
+
+| `platform.engine` | CLI | Zone is | Job scheduler | Table history |
+| :--- | :--- | :--- | :--- | :--- |
+| `databricks` | `databricks` | A workspace profile | Databricks Jobs | Delta time travel |
+| `duckdb` | `duckdb` | A `.duckdb` database file | None | None |
+
+Steps 2 through 8 below document the **Databricks adapter**. When `platform.engine` is `duckdb`, read the [DuckDB Adapter](#duckdb-adapter) section instead; it overrides Steps 2 through 8 and keeps the same contract, so callers do not branch on engine.
+
+If `platform.engine` holds any other value, STOP and report that the engine is unsupported. Do not guess a CLI.
+
+## Step 2: Authentication
+
+Verify connectivity with `databricks auth profiles`. Cross-reference against the zone list from the manifest -- every zone's profile must show `Valid: YES`. Re-authenticate expired tokens with `databricks auth login --profile <profile_from_manifest>`.
+
+STOP: Verify all requested zones show `Valid: YES` before continuing to any job operations.
+
+## Step 3: Determine Operation Type
+
+| Goal | Operation | Job Name (from manifest) | Step |
+| :--- | :--- | :--- | :--- |
+| Create or replace a table (DDL) | Schema Change | `orchestration.jobs.schema_runner.name` | Step 4 |
+| Add/rename/drop columns (DDL) | Schema Change | `orchestration.jobs.schema_runner.name` | Step 4 |
+| Run a standalone SQL file | Schema Change | `orchestration.jobs.schema_runner.name` | Step 4 |
+| Backfill or load daily metrics | Pipeline Run | `orchestration.domain_jobs.<domain>.daily` | Step 5 |
+| Backfill or load cumulative metrics | Pipeline Run | `orchestration.domain_jobs.<domain>.cumulative` | Step 5 |
+| Run an ad-hoc Python script | Ad-hoc Script | Discover by name pattern `adhoc_script_runner` | Step 6 |
+| Query data interactively | Direct SQL | `aitools tools query` | Step 7 |
+| Check table schema or sample data | Data Exploration | `aitools tools discover-schema` | Step 7 |
+| Browse catalogs or inspect table metadata | Catalog Exploration | `manifest.source_metadata` query templates | Step 7b |
+
+## Step 4: Schema Changes (DDL)
+
+Use this for CREATE TABLE, ALTER TABLE, CREATE VIEW, or any standalone SQL file that modifies database objects.
+
+### 4a. Discover the Schema Changes Runner Job
+
+Read the job name from `orchestration.jobs.schema_runner.name` in the manifest. Discover the job ID using the [reference.md Job Discovery](reference.md#job-discovery) pattern for your shell. Record the `job_id` for each zone.
+
+### 4b. Analyze the SQL File
+
+Read the target SQL file. Identify which `${variables}` it uses:
+
+| Variable in SQL | Maps to Job Parameter | How to Derive |
+| :--- | :--- | :--- |
+| `${catalog_name}` | `CATALOG_NAME` | Resolve `catalogs.targets[metric_store].pattern` with zone suffix |
+| `${schema_name}` | `SCHEMA_NAME` | Domain name from directory path or manifest `domains` section |
+| `${table_name}` | `TABLE_NAME` | Table name from the CREATE TABLE statement |
+| `${TARGET_ENV}` | `TARGET_ENV` | Environment from `platform.zones[].env` |
+| `${SOURCE_ZONE}` | `SOURCE_ZONE` | Zone ID from `platform.zones[].id` |
+| `${SOURCE_ENV}` | `SOURCE_ENV` | Usually same as `TARGET_ENV` |
+
+Rules for parameter derivation:
+
+- **CREATE TABLE** files: use `${catalog_name}.${schema_name}.${table_name}` -- fill all three
+- **ALTER TABLE** files: table names are hardcoded in the SQL -- pass `CATALOG_NAME` and `SCHEMA_NAME`, leave `TABLE_NAME` empty
+- **Standalone files** (e.g., definition SQL): use `${TARGET_ENV}` and `${SOURCE_ZONE}` only -- pass empty strings for `CATALOG_NAME`, `SCHEMA_NAME`, `TABLE_NAME`
+
+STOP: Read the SQL file and confirm which variables it uses before building the payload. Do not guess.
+
+### 4c. Build and Send the JSON Payload
+
+Build the payload per [reference.md Schema Changes Runner template](reference.md#schema-changes-runner) and send using the [reference.md Golden Patterns](reference.md#golden-patterns----bashzsh-macos-and-linux) for your shell. Record the `run_id`, then proceed to Step 8.
+
+### 4d. Multi-Zone Dispatch
+
+Repeat steps 4a-4c sequentially per zone. Do not parallelize -- isolate failures per zone. Use `platform.deployment_order` from the manifest.
+
+## Step 5: Pipeline Runs (Data Loads)
+
+### 5a. Discover the Pipeline Job
+
+Look up the job name from `orchestration.domain_jobs.<domain>.daily` or `.cumulative` in the manifest. Discover the job ID using the [reference.md Job Discovery](reference.md#job-discovery) pattern for your shell.
+
+### 5b. Build and Send the Payload
+
+Build the payload per [reference.md Domain Daily/Cumulative Load Jobs template](reference.md#domain-dailycumulative-load-jobs) and send using the [reference.md Golden Patterns](reference.md#golden-patterns----bashzsh-macos-and-linux) for your shell. If `START_DATE` and `END_DATE` are empty strings, the job defaults to yesterday/today. Record `run_id` and proceed to Step 8.
+
+### 5c. Spark Configuration Exceptions
+
+Check `spark_conf` in the manifest for domain-specific overrides. If a domain has a special `_override` key (e.g., `spark_conf.account_intelligence_override`), do not modify its cluster configuration.
+
+## Step 6: Ad-hoc Script Runner
+
+### 6a. Discover the Ad-hoc Script Runner Job
+
+Search for a job name containing `adhoc_script_runner` using the [reference.md Job Discovery](reference.md#job-discovery) pattern for your shell.
+
+### 6b. Build and Send the Payload
+
+Build the payload per [reference.md Ad-hoc Script Runner template](reference.md#ad-hoc-script-runner) and send using the [reference.md Golden Patterns](reference.md#golden-patterns----bashzsh-macos-and-linux) for your shell. Record `run_id` and proceed to Step 8.
+
+## Step 7: Direct SQL Execution
+
+For simple ad-hoc queries that do not require a job cluster.
+
+> **Stability note:** The `databricks experimental aitools` command is in the experimental namespace, meaning it can change or be removed between CLI versions without notice. If unavailable, fall back to a schema runner job (Step 4) with the query in a temp SQL file.
+
+### Query Classification
+
+Before writing or executing any SQL, classify it. Only `metadata`, `aggregate`, `ddl_or_job`, and `diagnostic_categorical` queries are allowed by default.
+
+| Class | Examples | Allowed |
+| :--- | :--- | :--- |
+| `metadata` | `DESCRIBE TABLE`, `DESCRIBE HISTORY`, `SHOW CATALOGS/SCHEMAS/TABLES`, `information_schema.columns` | Always |
+| `aggregate` | `COUNT(*)`, `MIN/MAX`, null rates, percentiles, `GROUP BY` summaries, row-count comparisons | Always |
+| `ddl_or_job` | `CREATE TABLE`, `ALTER TABLE`, job runner payloads | Always via existing runner |
+| `diagnostic_categorical` | `GROUP BY status_column ORDER BY cnt DESC LIMIT 50` on system-defined types | Allowed with capped result set |
+| `raw_rows` | `SELECT *`, projected row-level IDs, free-text columns without aggregation | Blocked unless break-glass approved |
+
+For break-glass rules see the [Raw Data Egress Policy](../../README.md#raw-data-egress-policy).
+
+### Query via AI Tools
+
+Use aggregate or metadata queries:
+
+```bash
+# Row count
+databricks experimental aitools tools query "SELECT COUNT(*) AS total_rows FROM catalog.schema.table" --profile <profile> 2>&1
+
+# Date range and freshness
+databricks experimental aitools tools query "SELECT MIN(SNAPSHOT_DATE) AS min_date, MAX(SNAPSHOT_DATE) AS max_date, COUNT(*) AS total_rows FROM catalog.schema.table" --profile <profile> 2>&1
+
+# Grouped status distribution
+databricks experimental aitools tools query "SELECT status_column, COUNT(*) AS cnt FROM catalog.schema.table WHERE status_column IS NOT NULL GROUP BY status_column ORDER BY cnt DESC LIMIT 50" --profile <profile> 2>&1
+```
+
+Resolve catalog names using `catalogs.targets[].pattern` from the manifest with the appropriate zone suffix.
+
+### Query from File
+
+When the SQL is long or contains special characters, write to a temp file first. See [reference.md SQL File Execution](reference.md#sql-file-execution-via-temp-file) for the shell-specific pattern.
+
+### Discover Schema
+
+```bash
+databricks experimental aitools tools discover-schema <catalog>.<schema>.<table> --profile <profile> 2>&1
+```
+
+### Limitations
+
+- `aitools tools query` does NOT support multi-statement SQL (`;`-separated). Split and run individually.
+- SQL with `--` comment lines will be parsed as CLI flags if passed as a positional argument. Always use `--file`.
+- No `databricks sql execute` or `databricks execute-statement` commands exist.
+- No semicolons in SQL comments -- Databricks splits the statement at `;` even inside comments.
+
+## Step 7b: Catalog Exploration
+
+For catalog browsing (list catalogs, schemas, tables, inspect metadata, version history), use the query templates in `manifest.source_metadata`: `catalog_list_query`, `schema_list_query`, `table_list_query`, `table_describe_query`, and `column_metadata_query`. Resolve catalog names from `catalogs.sources[].pattern` or `catalogs.targets[].pattern` in the manifest. For table profiling, combine `row_count_query`, `date_range_query`, and `top_k_distribution_query`.
+
+## Step 8: Run Monitoring
+
+Monitor runs per [reference.md Run Monitoring](reference.md#run-monitoring) for your shell.
+
+| `life_cycle_state` | `result_state` | Meaning |
+| :--- | :--- | :--- |
+| `RUNNING` | (empty) | Still executing |
+| `TERMINATED` | `SUCCESS` | Completed successfully |
+| `TERMINATED` | `FAILED` | Failed -- get output |
+| `INTERNAL_ERROR` | `FAILED` | Infrastructure failure -- get output |
+| `SKIPPED` | (any) | Skipped due to dependency |
+
+**Polling strategy:** Launch with `--no-wait`, wait 30s, check status. If still `RUNNING`, wait 30s more and re-check. On `SUCCESS`, report summary. On `FAILED`, fetch output with `jobs get-run-output`.
+
+## DuckDB Adapter
+
+Active when `platform.engine` is `duckdb`. This section replaces Steps 2 through 8. Everything above about reading the manifest (Step 1) and detecting the shell (Step 0) still applies.
+
+DuckDB has no workspace, no job scheduler, and no tokens. A zone is a database file. This makes the whole skill set runnable locally with no account, which is the point: the same `forge-builder` run works against either engine with only the manifest changing.
+
+### D1: Resolve Zone Database Files
+
+Each zone in `platform.zones` maps to one database file at `{platform.duckdb_dir}/{zone.id}.duckdb`. Resolve `platform.duckdb_dir` relative to the workspace root.
+
+| Manifest field | DuckDB meaning |
+| :--- | :--- |
+| `platform.zones[].id` | Database file stem |
+| `platform.zones[].profile` | Ignored — no profiles exist |
+| `platform.duckdb_dir` | Directory holding the `.duckdb` files |
+| `catalogs.*.pattern` | Schema name prefix inside the file, `{zone_suffix}` resolved to empty |
+
+Because each zone is its own file, catalog names do not carry a zone suffix. Resolve `{zone_suffix}` to the empty string and address tables as `{schema}.{table}`.
+
+### D2: Authentication
+
+There are no tokens. Authentication is an availability check:
+
+```bash
+duckdb --version
+```
+
+Then confirm every requested zone's file exists. A missing file is a hard stop — do not create it implicitly, because an empty database silently returns zero rows for every query.
+
+STOP: Verify `duckdb` is on `PATH` and every requested zone file exists before continuing.
+
+### D3: Execution
+
+One command shape covers every operation. Always request JSON so results parse deterministically:
+
+```bash
+duckdb "{duckdb_dir}/{zone_id}.duckdb" -json -c "<sql>"
+```
+
+For SQL that is long, multi-statement, or contains quotes, write it to a temp file and read it in:
+
+```bash
+duckdb "{duckdb_dir}/{zone_id}.duckdb" -json < /tmp/forge-query.sql
+```
+
+Unlike the Databricks adapter, DuckDB accepts multi-statement SQL separated by `;`, so schema files run as-is without splitting.
+
+### D4: Schema Changes (DDL)
+
+There is no schema runner job. Execute the SQL file directly against each zone, in `platform.deployment_order`, one zone at a time, stopping on first failure:
+
+```bash
+duckdb "{duckdb_dir}/{zone_id}.duckdb" -json < path/to/schema.sql
+```
+
+The `${variable}` substitutions from Step 4b still apply, but you perform them before execution rather than passing them as job parameters. Read the SQL file, substitute each `${variable}` with its resolved value, write the result to a temp file, then execute that file.
+
+`${catalog_name}` resolves to the schema name and `${SOURCE_ZONE}` to the zone id. Because DuckDB has no three-part catalog namespace, write `CREATE SCHEMA IF NOT EXISTS {schema}` before the first `CREATE TABLE` in a new zone.
+
+The Schema Sign-Off gate still applies. Displaying the full SQL before execution is a forge-builder guardrail, not a Databricks feature.
+
+### D5: Pipeline Runs (Data Loads)
+
+There is no job scheduler, so there is no run to trigger or poll. Execute the pipeline's compiled SQL directly per zone.
+
+| Framework | How to run |
+| :--- | :--- |
+| `spark_python` | Not supported — DuckDB has no Spark runtime. Extract the SQL from `run_query()` and execute it with D3, or switch `pipeline_framework` to `dbt`. |
+| `dbt` | `dbt run --select <model> --target {zone_id}` using the `duckdb` adapter, with one dbt target per zone |
+
+Date parameters that the Databricks adapter passes as `START_DATE` and `END_DATE` job parameters are substituted into the SQL text before execution.
+
+### D6: Ad-hoc Scripts
+
+Not supported. DuckDB has no script runner. Run the script locally with the interpreter it needs, and use D3 for any SQL it would have executed.
+
+### D7: Direct SQL Execution
+
+The Query Classification table in Step 7 applies unchanged — the Raw Data Egress Policy is a dataforge rule, not a platform capability, and DuckDB running on local synthetic data does not exempt a query from it.
+
+```bash
+# Row count
+duckdb "{duckdb_dir}/{zone_id}.duckdb" -json -c "SELECT COUNT(*) AS total_rows FROM schema.table"
+
+# Date range and freshness
+duckdb "{duckdb_dir}/{zone_id}.duckdb" -json -c "SELECT MIN(snapshot_date) AS min_date, MAX(snapshot_date) AS max_date, COUNT(*) AS total_rows FROM schema.table"
+
+# Grouped status distribution
+duckdb "{duckdb_dir}/{zone_id}.duckdb" -json -c "SELECT status_column, COUNT(*) AS cnt FROM schema.table WHERE status_column IS NOT NULL GROUP BY ALL ORDER BY cnt DESC LIMIT 50"
+```
+
+### D8: Catalog Exploration
+
+DuckDB exposes `information_schema` and its own `duckdb_*` table functions. These are the `manifest.source_metadata` templates for this engine:
+
+| Need | Query |
+| :--- | :--- |
+| List catalogs | `SELECT database_name FROM duckdb_databases()` |
+| List schemas | `SELECT schema_name FROM information_schema.schemata` |
+| List tables | `SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema','pg_catalog')` |
+| Describe a table | `DESCRIBE {schema}.{table}` |
+| Column metadata | `SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = '{schema}' AND table_name = '{table}' ORDER BY ordinal_position` |
+| Row count | `SELECT COUNT(*) AS total_rows FROM {schema}.{table}` |
+| NULL rate for a column | `SELECT COUNT(*) FILTER (WHERE {column} IS NULL) * 1.0 / COUNT(*) AS null_rate FROM {schema}.{table}` |
+
+### D9: Run Monitoring
+
+Not applicable. `duckdb` executes synchronously and returns a nonzero exit code on failure, so there is no `run_id` and no polling. Treat a zero exit code with parseable JSON on stdout as `TERMINATED / SUCCESS`, and any nonzero exit code as `TERMINATED / FAILED` with stderr as the run output.
+
+### D10: Rollback
+
+DuckDB has no table version history, so `manifest.source_metadata.version_history.enabled` is `false` for this engine. `DESCRIBE HISTORY`, `VERSION AS OF`, and `RESTORE TABLE` are unavailable. Recover from a bad load by re-running it for the affected date range, which is safe because loads are `INSERT OVERWRITE` by date partition.
+
+For a demo or a local project, copying the `.duckdb` file before a destructive change is the practical equivalent of a snapshot.
+
+### DuckDB Summary Table
+
+```
+| Zone | Operation | Exit Code | Status | Details |
+| :--- | :-------- | :-------- | :----- | :------ |
+| <zone> | <schema change / load / query> | <code> | <status> | ... |
+```
+
+## dbt Mode Additions
+
+When `platform.pipeline_framework` in the manifest is set to `dbt`, the following additional operation types apply.
+
+### dbt Task Types
+
+| Goal | Operation | Command | Relevant Manifest Fields |
+| :--- | :--- | :--- | :--- |
+| Run specific models | dbt run | `dbt run --select <model>` | `dbt.project_dir`, `dbt.profiles_dir`, `dbt.target` |
+| Run modified models | dbt state run | `dbt run --select state:modified+` | `dbt.project_dir`, `dbt.target` |
+| Test models | dbt test | `dbt test --select <model>` | `dbt.test_paths` |
+| Generate docs | dbt docs | `dbt docs generate` | `dbt.project_dir` |
+| Full refresh | dbt refresh | `dbt run --full-refresh --select <model>` | `dbt.materialization_default` |
+| Compile SQL | dbt compile | `dbt compile --select <model>` | `dbt.project_dir` |
+
+### dbt on Databricks
+
+**Local execution:** `dbt run --select <model> --profiles-dir <dbt.profiles_dir> --target <dbt.target>` from `dbt.project_dir`.
+
+**Databricks-hosted execution:** Submit dbt commands as job tasks with `dbt_task` type. See [reference.md dbt Task template](reference.md#dbt-task-when-pipeline_framework--dbt).
+
+**dbt Cloud API:** If `dbt.cloud_account_id` is present in the manifest, use the API with `$DBT_CLOUD_API_TOKEN` from the environment. When absent, fall back to local or Databricks-hosted execution.
+
+### Hybrid Mode (Spark Python + dbt)
+
+When `platform.pipeline_framework` is `spark_python` but dbt models exist in the repository:
+
+1. Check `orchestration.file_patterns.dbt_models` for dbt model paths
+2. Route dbt model changes to `dbt run --select state:modified+`
+3. Route Python pipeline changes to the standard Spark Python job workflow (Steps 4-6)
+4. Schema changes may use either raw DDL (Step 4) or `dbt run --full-refresh` depending on `dbt.schema_generation`
+
+## Anti-Patterns
+
+See [reference.md](reference.md) for the full anti-pattern catalog with examples. Key items:
+
+- Never use `--job-id` flag with `jobs run-now` -- use positional or `--json`
+- Never run `jobs run-now` without explicit parameters
+- Never use `&&` in PowerShell
+- Never use `Set-Content -Encoding UTF8` -- use `[System.IO.File]::WriteAllText()`
+
+## Summary Table for User
+
+After all operations complete, present a summary:
+
+```
+| Zone | Job | Run ID | Status | Details |
+| :--- | :--- | :----- | :----- | :------ |
+| <zone> | <job_name> | <run_id> | <status> | ... |
+```

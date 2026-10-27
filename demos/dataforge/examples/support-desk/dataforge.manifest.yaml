@@ -1,0 +1,39 @@
+# =============================================================================
+# dataforge manifest -- support-desk example project seed
+#
+# This is the whole config boundary for the example. Everything dataforge knows
+# about this business -- its domains, entities, grains, catalogs, and naming
+# rules -- is either written here or discovered by forge-init from the code and
+# the warehouse. No skill hardcodes any of it.
+#
+# Run `python seed.py` first to build the DuckDB zone files, then ask the agent
+# to "initialize dataforge" to produce dataforge.manifest.resolved.yaml.
+# =============================================================================
+
+skill_version: "0.1.0"
+
+project:
+  name: "support-desk"
+  store_name: "support_metric_store"
+
+  # Null means gh operates on whatever repository the working directory is in.
+  repository: null
+
+platform:
+  # The whole point of the example: duckdb needs no account and no cluster.
+  # Switch this to "databricks" and nothing else in the skills changes.
+  engine: "duckdb"
+
+  pipeline_framework: "spark_python"
+
+  # One <zone_id>.duckdb file per zone lives here.
+  duckdb_dir: "warehouse"
+
+overrides:
+  naming:
+    # The Ticket pipelines only demonstrate `create` and `close`, so those are
+    # the only verbs forge-init can discover. Incidents get resolved rather than
+    # closed, and the demo builds incident metrics -- so the verb is declared
+    # here. This is the config boundary doing its job: a new business word
+    # enters through the manifest, not through a skill.
+    verbs: ["resolve"]

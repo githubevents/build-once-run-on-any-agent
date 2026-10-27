@@ -1,0 +1,73 @@
+# =============================================================================
+# dataforge manifest -- project seed
+#
+# This seed file contains ONLY the values the agent cannot auto-discover.
+# On first invocation (or when this file changes), the agent runs forge-init
+# to discover all remaining configuration via the platform CLI and codebase
+# scanning, then writes the full resolved manifest to dataforge.manifest.resolved.yaml.
+#
+# Sub-skills read dataforge.manifest.resolved.yaml at runtime. Do not hand-edit it.
+# To change a discovered value, add an override in the commented Tier 2 section below.
+#
+# For the seed template with field-level documentation, see:
+#   dataforge.manifest.seed.example.yaml
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Skill framework version (semver)
+# ---------------------------------------------------------------------------
+skill_version: "0.1.0"
+
+# ---------------------------------------------------------------------------
+# TIER 1: REQUIRED -- user must provide these values
+# ---------------------------------------------------------------------------
+project:
+  # Human-readable project name. forge-init can default this from the workspace
+  # folder name when the user does not provide a project-specific value.
+  name: "my-project"
+
+  # Root directory name for the metric store in this repository.
+  # forge-init uses this to scan project code and discover domains, tools,
+  # entities, and downstream integrations.
+  store_name: "metric_store_directory"
+
+  # Optional GitHub repository in "owner/name" form, used for issue intake and
+  # pull requests. Set to null to operate on the repository in the working
+  # directory.
+  repository: null
+
+platform:
+  # Execution engine. "databricks" drives the Databricks CLI against Unity
+  # Catalog. "duckdb" drives the DuckDB CLI against local database files and
+  # needs no account, which makes it the zero-setup option.
+  engine: "databricks"
+
+  pipeline_framework: "spark_python"
+
+  # Required when engine is "duckdb": directory holding one <zone_id>.duckdb
+  # file per zone, relative to the workspace root. Ignored for "databricks".
+  duckdb_dir: null
+
+# ---------------------------------------------------------------------------
+# TIER 2: OPTIONAL OVERRIDES -- uncomment only when agent defaults are wrong
+#
+# The agent merges these on top of discovered values. Tier 2 always wins.
+# ---------------------------------------------------------------------------
+# overrides:
+#   deployment_order: [<zone_1>, <zone_2>, <zone_3>]
+#
+#   zone_exceptions:
+#     <catalog_role>:
+#       <zone_id>: "<catalog_name>"
+#
+#   virtual_tools:
+#     <virtual_tool_name>:
+#       base_tool: <base_tool_name>
+#       domain: <domain_name>
+#       folder: <PascalCase_Folder_Name>
+#
+#   table_prefix_overrides:
+#     <tool_name>: "<schema_table_prefix>"
+#
+#   folder_name_overrides:
+#     <tool_name>: "<PascalCase_Folder_Name>"

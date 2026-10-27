@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A practical guide to agent skills. Slides, demos, and code from Andrea Griffiths and Shishir Tewari at GitHub Universe 2026.">
+  <title>Build once, run on any agent</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme = param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Build once,<br>run on any agent.</h1>
+      <p class="subtitle">A practical guide to agent skills</p>
+      <p>Andrea Griffiths <span class="muted">&amp;</span> Shishir Tewari<br>
+        <span class="muted">GitHub Universe 2026 &middot; BLD1787B</span></p>
+      <!-- DECK_LINKS -->
+    </header>
+
+    <section aria-labelledby="demos">
+      <h2 id="demos">The demos</h2>
+      <article>
+        <h3>Proof Agent</h3>
+        <p>Andrea's independent verifier follows a pull request through findings,
+          corrections, and verdicts backed by evidence.</p>
+        <video controls playsinline preload="none" poster="proof-agent.jpg" aria-label="Proof Agent narrated demo, 3 minutes 52 seconds">
+          <source src="assets/recordings/proof-agent-narrated.mp4" type="video/mp4">
+          <a href="assets/recordings/proof-agent-narrated.mp4">Download the Proof Agent demo</a>
+        </video>
+        <a href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-agent">Get the skill and action</a>
+      </article>
+      <article>
+        <h3>Dataforge</h3>
+        <p>Shishir's four skills turn a project manifest and an issue into a data pipeline.</p>
+        <video controls playsinline preload="none" poster="dataforge.jpg" aria-label="Dataforge demo">
+          <source src="assets/recordings/Dataforge.mp4" type="video/mp4">
+          <a href="assets/recordings/Dataforge.mp4">Download the Dataforge demo</a>
+        </video>
+        <a href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/dataforge">Get the skills and walkthrough</a>
+      </article>
+    </section>
+
+    <footer>
+      <a href="https://github.com/githubevents/build-once-run-on-any-agent">Source on GitHub</a>
+      <a href="https://github.com/githubevents/build-once-run-on-any-agent/tree/main/demos/proof-review">Also: proof-review, for verification under load</a>
+    </footer>
+  </main>
+</body>
+</html>

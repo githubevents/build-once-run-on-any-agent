@@ -1,0 +1,70 @@
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root { --ink: #16161d; --muted: #5b5b66; --ease: cubic-bezier(.2, .7, .2, 1); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); background: #d9cdbd; overflow: hidden; -webkit-font-smoothing: antialiased; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.stage { position: fixed; inset: 0; overflow: hidden; }
+.desk {
+  position: absolute; left: 50%; top: 50%;
+  width: max(100%, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9;
+  --rx: 0deg; --ry: 0deg; --tx: 0px; --ty: 0px;
+  /* scale(1.03) keeps ±3deg / ±8px of tilt from exposing the stage edges. */
+  transform: translate(-50%, -50%) perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(1.03);
+  transition: transform .18s var(--ease);
+}
+.desk-photo { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+#objects { position: absolute; inset: 0; width: 100%; height: 100%; }
+.spot {
+  fill: transparent; stroke: transparent; stroke-width: 36; cursor: pointer;
+  transition: fill .18s var(--ease), stroke .18s var(--ease), filter .18s var(--ease);
+}
+.spot:hover, .spot:focus-visible { fill: rgb(255 214 160 / .14); filter: drop-shadow(0 0 12px rgb(255 190 120 / .35)); outline: none; }
+.spot:focus-visible { stroke: #fff; stroke-width: 2; }
+@media (orientation: portrait) {
+  /* Keep photo x=50..1194 visible with 12px margins. */
+  .desk { width: calc((100% - 24px) * 1280 / 1144); transform: translate(-48.6%, -50%) perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) { .desk { transform: translate(-50%, -50%); transition: none; } }
+@media (prefers-reduced-motion: reduce) and (orientation: portrait) { .desk { transform: translate(-48.6%, -50%); } }
+
+/* Panels */
+.panel {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100svh - 48px);
+  padding: 32px 32px 28px;
+  border: 0; border-radius: 16px;
+  background: #fbfaf7; color: var(--ink);
+  box-shadow: 0 24px 80px -20px rgb(0 0 0 / .5);
+}
+.panel::backdrop { background: rgb(20 14 8 / .45); backdrop-filter: blur(3px); }
+.panel[open] { animation: rise .22s var(--ease); }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .panel[open] { animation: none; } }
+.panel h2 { margin: 0 0 14px; font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -.01em; padding-right: 32px; }
+.panel h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+.panel p { margin: 0 0 14px; color: #33333b; }
+.panel video { display: block; width: 100%; margin: 12px 0; }
+.panel article + article { margin-top: 24px; }
+.close {
+  position: absolute; top: 14px; right: 14px;
+  width: 36px; height: 36px; border: 0; border-radius: 50%;
+  display: grid; place-items: center; text-decoration: none;
+  background: transparent; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer;
+}
+.close:hover, .close:focus-visible { background: #eeece6; color: var(--ink); }
+.links { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.links a, .panel a { color: var(--ink); }
+.links a {
+  display: inline-block; padding: 8px 14px; border-radius: 999px;
+  background: #efede7; text-decoration: none; font-weight: 500; font-size: 14px;
+}
+.links a:hover, .links a:focus-visible { background: #e3e0d7; }
+.layout { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 18px 0 0; font-size: 14px; }
+.layout dt { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 500; }
+.layout dd { margin: 0; color: var(--muted); }
+:focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }

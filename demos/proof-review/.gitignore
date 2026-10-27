@@ -1,0 +1,4 @@
+.DS_Store
+*.json
+!package.json
+node_modules/
