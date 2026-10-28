@@ -6,7 +6,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { font: 400 16px/1.55 "Inter", system-ui, sans-serif; color: var(--ink); background: #d9cdbd; overflow: hidden; -webkit-font-smoothing: antialiased; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; font-family: system-ui, sans-serif; }
 
 .stage { position: fixed; inset: 0; overflow: hidden; }
 .desk {

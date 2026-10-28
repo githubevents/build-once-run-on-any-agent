@@ -9,6 +9,8 @@ function setup({ reducedMotion = false } = {}) {
   const panels = Object.fromEntries(["demos", "about"].map((id) => {
     const dialog = new EventTarget();
     dialog.open = false;
+    dialog.videos = [{ dataset: { poster: `${id}.jpg` } }];
+    dialog.querySelectorAll = (selector) => (selector === "video[data-poster]" ? dialog.videos : []);
     dialog.showModal = () => { dialog.open = true; };
     dialog.close = () => { dialog.open = false; };
     const link = Object.assign(new EventTarget(), { dataset: { dialog: id } });
@@ -50,6 +52,13 @@ test("photo panel links open their own dialog without navigating", () => {
     assert.equal(click(panel.close).defaultPrevented, true);
     assert.equal(panel.dialog.open, false);
   }
+});
+
+test("video posters load only when their dialog opens", () => {
+  const { demos } = setup();
+  assert.equal(demos.dialog.videos[0].poster, undefined);
+  click(demos.link);
+  assert.equal(demos.dialog.videos[0].poster, "demos.jpg");
 });
 
 test("backdrop dismisses only when both press and release target the backdrop", () => {
