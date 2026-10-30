@@ -21,7 +21,10 @@ document.querySelectorAll('[data-dialog]').forEach((link) => {
   link.addEventListener('click', (event) => {
     event.preventDefault();
     tilt();
-    document.getElementById('dialog-' + link.dataset.dialog).showModal();
+    const dialog = document.getElementById('dialog-' + link.dataset.dialog);
+    // Posters live in closed dialogs; fetch them on open so they don't compete with the desk photo.
+    for (const video of dialog.querySelectorAll('video[data-poster]')) video.poster = video.dataset.poster;
+    dialog.showModal();
   });
 });
 document.querySelectorAll('[data-close]').forEach((link) => {
