@@ -45,6 +45,7 @@ export async function buildSite({ source = root, output = path.join(root, "dist"
     for (const file of recordings) {
       await cp(path.join(source, "assets/recordings", file), path.join(output, "assets/recordings", file));
     }
+    await cp(path.join(source, "assets/session-summary.pdf"), path.join(output, "assets/session-summary.pdf"));
     let index = await readFile(path.join(output, "index.html"), "utf8");
     index = index.replace("<!-- DECK_LINKS -->", deckLinks({ pdf: hasDeck, pptx: hasPptx }));
     await writeFile(path.join(output, "index.html"), index);

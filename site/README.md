@@ -6,6 +6,10 @@ ideas note opens the about panel and README. Other desk objects link directly
 to the repository, slides folder, speakers, GitHub September updates video, a YouTube
 Music playlist (headphones), Procore, and the session survey (GitHub sticker).
 
+The ideas note's about panel also links to the eight-page AI-generated session
+summary by VOXO, with options to read or download the PDF. The original lives at
+`assets/session-summary.pdf` and is copied unchanged into the published site.
+
 ## Build locally
 
 ```bash

@@ -36,6 +36,8 @@ test("no-deck build includes public assets only and clears stale slides", async 
   for (const name of ["Dataforge.mp4", "proof-agent-narrated.mp4"]) {
     await writeFile(path.join(source, "assets/recordings", name), "media fixture");
   }
+  await cp(new URL("../assets/session-summary.pdf", import.meta.url),
+    path.join(source, "assets/session-summary.pdf"));
   await writeFile(path.join(source, "private.txt"), "not a public asset");
   await mkdir(output);
   await writeFile(path.join(output, "talk.html"), "stale deck");
@@ -53,7 +55,13 @@ test("no-deck build includes public assets only and clears stale slides", async 
   assert.ok(!files.includes("src"));
   assert.ok(!files.includes("chunks"));
   assert.deepEqual((await readdir(path.join(output, "assets"))).sort(),
-    ["decal.jpg", "fonts", "recordings"]);
+    ["decal.jpg", "fonts", "recordings", "session-summary.pdf"]);
+  const summary = await readFile(path.join(output, "assets/session-summary.pdf"));
+  assert.equal(summary.subarray(0, 5).toString(), "%PDF-");
+  assert.deepEqual(summary, await readFile(new URL("../assets/session-summary.pdf", import.meta.url)));
+  assert.match(html, /href="assets\/session-summary\.pdf" target="_blank" rel="noopener">Read the summary \(PDF\)/);
+  assert.match(html, /href="assets\/session-summary\.pdf" download>Download the summary \(PDF\)/);
+  assert.match(html, /AI-generated summary by VOXO/);
   assert.deepEqual(await readFile(path.join(output, "assets/decal.jpg")),
     await readFile(path.join(source, "site/desk/assets/decal.jpg")));
   assert.match(html, /<img [^>]*src="assets\/decal.jpg"[^>]*width="1280" height="720"/);
